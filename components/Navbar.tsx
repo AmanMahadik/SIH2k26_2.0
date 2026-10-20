@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Shield, FileCheck, Layers, Scale, Database, RefreshCw, BarChart3, AlertTriangle } from 'lucide-react';
 import { AppRole } from '@/lib/types';
 import { getStoredRole, setStoredRole, resetDemoData } from '@/lib/store';
+import AlertCenter from './AlertCenter';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -51,6 +52,7 @@ export default function Navbar() {
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             <span className="text-emerald-400 font-medium">Supabase Connected</span>
           </span>
+          <AlertCenter />
           <button
             onClick={resetDemoData}
             title="Reset demonstration state"

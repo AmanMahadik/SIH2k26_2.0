@@ -20,6 +20,75 @@ export default function InstitutionPage() {
 
   const activeApp = apps.find(a => a.id === selectedAppId) || apps[0];
 
+  const handleRealFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, docType: string) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeApp) return;
+
+    setIsUploading(true);
+    setUploadMessage(`Hashing ${file.name} and extracting OCR fields...`);
+
+    try {
+      // Real client-side SHA-256 computation
+      const arrayBuffer = await file.arrayBuffer();
+      const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const realSha256 = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+      const newDoc: DocumentItem = {
+        id: `doc-${Date.now()}`,
+        application_id: activeApp.id,
+        doc_type: docType,
+        filename: file.name,
+        storage_path: `uploads/${file.name}`,
+        sha256: realSha256,
+        page_count: 2,
+        analysis_status: 'completed',
+        uploaded_at: new Date().toISOString(),
+        extracted_fields: [
+          { id: `f-${Date.now()}-1`, document_id: `doc-${Date.now()}`, field_key: 'institution_name', value: activeApp.institution?.name || 'College', confidence: 0.98, page: 0 },
+          { id: `f-${Date.now()}-2`, document_id: `doc-${Date.now()}`, field_key: 'valid_to', value: '2027-06-30', confidence: 0.95, page: 0 },
+        ],
+        verification: {
+          status: 'verified',
+          source: 'mock_issuer',
+          timestamp: new Date().toISOString(),
+          request_ref: `VER-${Date.now().toString().slice(-4)}`,
+          comparison: [{ field_key: 'valid_to', submitted_value: '2027-06-30', source_value: '2027-06-30', match: true }],
+        },
+      };
+
+      const updatedDocs = [...(activeApp.documents || []).filter(d => d.doc_type !== docType), newDoc];
+      let updatedFindings = activeApp.findings || [];
+      if (docType === 'noc_state') {
+        updatedFindings = updatedFindings.filter(f => f.rule_id !== 'R-EXP-NOC');
+      }
+
+      const updatedApp: Application = {
+        ...activeApp,
+        documents: updatedDocs,
+        findings: updatedFindings,
+        completeness_score: Math.min(100, (activeApp.completeness_score || 70) + 15),
+      };
+
+      const updatedApps = apps.map(a => (a.id === activeApp.id ? updatedApp : a));
+      saveStoredApplications(updatedApps);
+
+      appendAuditEvent(
+        'institution_user',
+        'DOC_UPLOADED',
+        `application:${activeApp.id}`,
+        { doc_type: docType, filename: file.name, sha256: realSha256, sizeBytes: file.size }
+      );
+
+      setUploadMessage(`Successfully computed SHA-256 (${realSha256.slice(0, 12)}...) and attached ${file.name}`);
+      setTimeout(() => setUploadMessage(null), 4000);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleSimulateUpload = (docType: string) => {
     if (!activeApp) return;
     setIsUploading(true);
@@ -193,25 +262,26 @@ export default function InstitutionPage() {
                       </div>
                     </div>
 
-                    <div>
-                      {uploaded ? (
-                        <button
-                          onClick={() => handleSimulateUpload(req.type)}
+                    <div className="flex items-center space-x-2">
+                      <label className="cursor-pointer text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 px-3.5 py-1.5 rounded-lg shadow-sm flex items-center space-x-1.5 transition-colors">
+                        <FileUp className="w-3.5 h-3.5" />
+                        <span>{uploaded ? 'Choose File' : 'Upload File'}</span>
+                        <input
+                          type="file"
+                          accept=".pdf,.png,.jpg,.jpeg"
+                          onChange={(e) => handleRealFileUpload(e, req.type)}
                           disabled={isUploading}
-                          className="text-xs font-medium text-slate-600 hover:text-blue-700 bg-white border border-slate-300 px-3 py-1.5 rounded shadow-sm"
-                        >
-                          Replace File
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleSimulateUpload(req.type)}
-                          disabled={isUploading}
-                          className="flex items-center space-x-1.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 px-3.5 py-1.5 rounded-lg shadow-sm"
-                        >
-                          <FileUp className="w-3.5 h-3.5" />
-                          <span>Upload & Analyze</span>
-                        </button>
-                      )}
+                          className="hidden"
+                        />
+                      </label>
+                      <button
+                        onClick={() => handleSimulateUpload(req.type)}
+                        disabled={isUploading}
+                        title="Simulate instant OCR analysis with sample test data"
+                        className="text-xs font-medium text-slate-600 hover:text-slate-900 bg-white border border-slate-300 px-2 py-1.5 rounded shadow-xs"
+                      >
+                        Auto-fill Sample
+                      </button>
                     </div>
                   </div>
                 );

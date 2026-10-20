@@ -196,6 +196,13 @@ export default function OfficerCaseScrutinyPage() {
           </div>
 
           <div className="flex items-center space-x-3">
+            <Link
+              href={`/officer/${app.id}/report`}
+              className="inline-flex items-center space-x-1.5 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 px-3 py-2 rounded-lg shadow-xs transition-all"
+            >
+              <FileText className="w-3.5 h-3.5 text-blue-900" />
+              <span>Generate Official Report / EoA</span>
+            </Link>
             <div className="text-right">
               <div className="text-[11px] font-bold text-slate-400 uppercase">Priority Rating</div>
               <div className="text-xl font-black text-rose-600">P-{app.priority}</div>
