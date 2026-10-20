@@ -1,0 +1,70 @@
+{
+  "category": "EOA_EXISTING",
+  "version": 1,
+  "source_ref": "AICTE Approval Process Handbook (APH) 2024-27 Chapter IV",
+  "rules": [
+    {
+      "id": "R-DOC-AFFIDAVIT",
+      "type": "required_document",
+      "doc_type": "affidavit",
+      "clause": "APH 2024-27 §4.1.2",
+      "description": "Submission of sworn affidavit on prescribed stamp paper is mandatory for Extension of Approval."
+    },
+    {
+      "id": "R-DOC-NOC",
+      "type": "required_document",
+      "doc_type": "noc_state",
+      "clause": "APH 2024-27 §4.1.4",
+      "description": "NOC from State Government / Affiliating University is mandatory for continuing courses."
+    },
+    {
+      "id": "R-DOC-LAND",
+      "type": "required_document",
+      "doc_type": "land_compliance",
+      "clause": "APH 2024-27 §4.2.1",
+      "description": "Proof of barrier-free campus land compliance and infrastructure certification."
+    },
+    {
+      "id": "R-EXP-NOC",
+      "type": "date_valid_for_year",
+      "doc_type": "noc_state",
+      "field": "valid_to",
+      "year": "2026-27",
+      "clause": "APH 2024-27 §4.3.1",
+      "description": "State/University NOC validity must extend across the academic year 2026-27."
+    },
+    {
+      "id": "R-EXP-AFFIDAVIT",
+      "type": "date_valid_for_year",
+      "doc_type": "affidavit",
+      "field": "execution_date",
+      "year": "2026-27",
+      "clause": "APH 2024-27 §4.1.3",
+      "description": "Affidavit execution date must be within 180 days of the EoA application filing."
+    },
+    {
+      "id": "R-XDOC-NAME",
+      "type": "cross_field_equal",
+      "fields": ["eoa_letter.institution_name", "affidavit.institution_name", "noc_state.institution_name"],
+      "fuzzy": 0.90,
+      "clause": "APH 2024-27 §4.4.2",
+      "description": "Legal institution name must be identical across all submitted documents and AICTE master records."
+    },
+    {
+      "id": "R-REC-INTAKE",
+      "type": "record_equals",
+      "field": "eoa_letter.approved_intake",
+      "record": "approved_intake",
+      "clause": "APH 2024-27 §4.5.1",
+      "description": "Total claimed intake must not exceed the sanctioned intake recorded in the AICTE national registry."
+    },
+    {
+      "id": "R-TER-FEE",
+      "type": "status_equals",
+      "record": "ter_status",
+      "value": "paid",
+      "clause": "APH 2024-27 §4.6.1",
+      "description": "Technical Education Regulatory (TER) fee payment status must be fully settled and confirmed."
+    }
+  ]
+}
