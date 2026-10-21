@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import GovLayout from '@/components/gov/GovLayout';
 import { RuleDefinition, RuleSet } from '@/lib/types';
 import { Layers, Plus, CheckCircle, ShieldCheck, FileCode, ArrowRight, BookOpen } from 'lucide-react';
 
@@ -93,7 +94,8 @@ export default function RulesManagerPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <GovLayout role="admin" activeTab="config">
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
         <div>
@@ -319,6 +321,7 @@ export default function RulesManagerPage() {
           </tbody>
         </table>
       </div>
-    </div>
+          </div>
+    </GovLayout>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import GovLayout from '@/components/gov/GovLayout';
 import { useParams, useRouter } from 'next/navigation';
 import { Application, DocumentItem, Finding, FindingStatus, VerifStatus } from '@/lib/types';
 import { getStoredApplications, saveStoredApplications, appendAuditEvent } from '@/lib/store';
@@ -163,7 +164,8 @@ export default function OfficerCaseScrutinyPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <GovLayout role="officer" activeTab="applications">
+      <div className="space-y-6">
       {/* Back button & Case Header */}
       <div className="space-y-4">
         <Link
@@ -550,5 +552,6 @@ export default function OfficerCaseScrutinyPage() {
         </div>
       </div>
     </div>
+    </GovLayout>
   );
 }

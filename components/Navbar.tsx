@@ -3,24 +3,32 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Shield, FileCheck, Layers, Scale, Database, RefreshCw, BarChart3, AlertTriangle } from 'lucide-react';
+import { Shield, FileCheck, Layers, Scale, Database, RefreshCw, BarChart3, AlertTriangle, LogIn, LogOut, User } from 'lucide-react';
 import { AppRole } from '@/lib/types';
 import { getStoredRole, setStoredRole, resetDemoData } from '@/lib/store';
+import { useSession, signIn, signOut } from 'next-auth/react';
 import AlertCenter from './AlertCenter';
 
 export default function Navbar() {
   const pathname = usePathname();
   const [role, setRole] = useState<AppRole>('officer');
   const [mounted, setMounted] = useState(false);
+  const { data: session } = useSession();
 
   useEffect(() => {
     setMounted(true);
-    setRole(getStoredRole());
+    if (session?.user && (session.user as any).role) {
+      const azureRole = (session.user as any).role as AppRole;
+      setRole(azureRole);
+      setStoredRole(azureRole);
+    } else {
+      setRole(getStoredRole());
+    }
 
     const handleRoleChange = () => setRole(getStoredRole());
     window.addEventListener('nirikshai_role_change', handleRoleChange);
     return () => window.removeEventListener('nirikshai_role_change', handleRoleChange);
-  }, []);
+  }, [session]);
 
   const handleSwitchRole = (newRole: AppRole) => {
     setRole(newRole);
@@ -42,15 +50,19 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
       {/* Top Govt of India / AICTE strip */}
-      <div className="bg-slate-900 text-slate-300 text-xs px-4 py-1.5 flex justify-between items-center">
+      <div className="bg-slate-900 text-slate-300 text-xs px-4 py-1.5 flex flex-wrap justify-between items-center gap-2">
         <div className="flex items-center space-x-2">
           <span className="font-semibold text-amber-400">SIH 2026 | PS 26261:</span>
           <span>All India Council for Technical Education (Regulation Bureau), Ministry of Education</span>
         </div>
         <div className="flex items-center space-x-4">
           <span className="inline-flex items-center space-x-1">
+            <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+            <span className="text-blue-300 font-medium">Azure Entra ID Ready</span>
+          </span>
+          <span className="inline-flex items-center space-x-1">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span className="text-emerald-400 font-medium">Supabase Connected</span>
+            <span className="text-emerald-400 font-medium">Azure PG Flexible Server</span>
           </span>
           <AlertCenter />
           <button
@@ -82,7 +94,7 @@ export default function Navbar() {
           </Link>
 
           {/* Navigation Links */}
-          <nav className="hidden md:flex space-x-1">
+          <nav className="hidden lg:flex space-x-1">
             {navLinks.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
@@ -103,22 +115,48 @@ export default function Navbar() {
             })}
           </nav>
 
-          {/* Role Switcher Pill */}
-          <div className="flex items-center space-x-2 bg-slate-100 p-1 rounded-lg border border-slate-200">
-            <span className="text-xs font-bold text-slate-500 uppercase px-2">Role:</span>
-            {(['institution', 'officer', 'admin', 'auditor'] as AppRole[]).map((r) => (
+          {/* Right Controls: Azure Entra Login & Role Switcher */}
+          <div className="flex items-center space-x-3">
+            {/* Azure Entra Login Button */}
+            {session?.user ? (
+              <div className="flex items-center space-x-2 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-lg text-xs">
+                <User className="w-3.5 h-3.5 text-blue-800" />
+                <span className="font-semibold text-blue-900 max-w-[120px] truncate">{session.user.name || session.user.email}</span>
+                <button
+                  onClick={() => signOut()}
+                  title="Sign out from Azure Entra ID"
+                  className="text-slate-500 hover:text-rose-600 pl-1"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
               <button
-                key={r}
-                onClick={() => handleSwitchRole(r)}
-                className={`text-xs capitalize font-semibold px-2.5 py-1 rounded transition-all ${
-                  role === r
-                    ? 'bg-white text-blue-950 shadow-sm border border-slate-200'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
+                onClick={() => signIn('azure-ad')}
+                className="inline-flex items-center space-x-1.5 bg-blue-900 hover:bg-blue-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-sm transition-colors"
+                title="Login with AICTE Microsoft Entra ID"
               >
-                {r === 'institution' ? 'College' : r === 'officer' ? 'Scrutiny Officer' : r === 'admin' ? 'Policy Admin' : 'Vigilance'}
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Azure SSO</span>
               </button>
-            ))}
+            )}
+
+            {/* Quick Demo Role Switcher */}
+            <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
+              {(['institution', 'officer', 'admin', 'auditor'] as AppRole[]).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => handleSwitchRole(r)}
+                  className={`text-xs capitalize font-semibold px-2 py-1 rounded transition-all ${
+                    role === r
+                      ? 'bg-white text-blue-950 shadow-sm border border-slate-200'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {r === 'institution' ? 'College' : r === 'officer' ? 'Officer' : r === 'admin' ? 'Admin' : 'Auditor'}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

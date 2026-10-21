@@ -38,7 +38,7 @@ values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'records', '{
 }'::jsonb);
 
 insert into applications (id, institution_id, category, academic_year, status, priority, created_by)
-values ('app-0001-aaaa-aaaa-aaaaaaaaaaaa', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'EOA_EXISTING', '2026-27', 'submitted', 10, 'inst_pict');
+values ('a0000001-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'EOA_EXISTING', '2026-27', 'submitted', 10, 'inst_pict');
 
 -- 2. Delhi Engineering College (Discrepancy: Expired NOC & Name Mismatch)
 insert into institutions (id, aicte_id, name, state, university)
@@ -54,7 +54,7 @@ values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'records', '{
 }'::jsonb);
 
 insert into applications (id, institution_id, category, academic_year, status, priority, created_by)
-values ('app-0002-bbbb-bbbb-bbbbbbbbbbbb', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'EOA_EXISTING', '2026-27', 'in_review', 85, 'inst_dcet');
+values ('b0000002-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'EOA_EXISTING', '2026-27', 'in_review', 85, 'inst_dcet');
 
 -- 3. Apex Technical Campus (Tamper Indicator: Metadata alteration & intake discrepancy)
 insert into institutions (id, aicte_id, name, state, university)
@@ -70,7 +70,7 @@ values ('cccccccc-cccc-cccc-cccc-cccccccccccc', 'records', '{
 }'::jsonb);
 
 insert into applications (id, institution_id, category, academic_year, status, priority, created_by)
-values ('app-0003-cccc-cccc-cccccccccccc', 'cccccccc-cccc-cccc-cccc-cccccccccccc', 'EOA_EXISTING', '2026-27', 'in_review', 95, 'inst_apex');
+values ('c0000003-cccc-cccc-cccc-cccccccccccc', 'cccccccc-cccc-cccc-cccc-cccccccccccc', 'EOA_EXISTING', '2026-27', 'in_review', 95, 'inst_apex');
 
 -- 4. National Institute of Management (Source Unavailable -> Escalates to Manual Review)
 insert into institutions (id, aicte_id, name, state, university)
@@ -86,7 +86,7 @@ values ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'records', '{
 }'::jsonb);
 
 insert into applications (id, institution_id, category, academic_year, status, priority, created_by)
-values ('app-0004-dddd-dddd-dddddddddddd', 'dddddddd-dddd-dddd-dddd-dddddddddddd', 'EOA_EXISTING', '2026-27', 'in_review', 70, 'inst_nims');
+values ('d0000004-dddd-dddd-dddd-dddddddddddd', 'dddddddd-dddd-dddd-dddd-dddddddddddd', 'EOA_EXISTING', '2026-27', 'in_review', 70, 'inst_nims');
 
 -- Initial Hash-Chained Audit Log Entry (Genesis block)
 insert into audit_log (id, actor, action, entity, payload, prev_hash, hash, at)

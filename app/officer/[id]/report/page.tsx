@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import GovLayout from '@/components/gov/GovLayout';
 import { Application } from '@/lib/types';
 import { getStoredApplications } from '@/lib/store';
 import { Printer, ArrowLeft, Download, ShieldCheck, CheckCircle2, AlertTriangle, FileText, QrCode } from 'lucide-react';
@@ -18,16 +19,16 @@ export default function FormalReportPage() {
   useEffect(() => {
     const loaded = getStoredApplications();
     setApps(loaded);
-    const curr = loaded.find(a => a.id === appId);
+    const curr = loaded.find((a) => a.id === appId);
     if (curr && (curr.findings?.length || 0) === 0) {
       setReportType('eoa_order');
     }
   }, [appId]);
 
-  const app = apps.find(a => a.id === appId) || apps[0];
+  const app = apps.find((a) => a.id === appId) || apps[0];
   if (!app) return null;
 
-  const hasDeficiencies = (app.findings && app.findings.length > 0);
+  const hasDeficiencies = app.findings && app.findings.length > 0;
   const today = new Date().toLocaleDateString('en-IN', {
     day: 'numeric',
     month: 'long',
@@ -39,250 +40,219 @@ export default function FormalReportPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
-      {/* Top Action Bar (Hidden in Print) */}
-      <div className="print:hidden flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-        <Link
-          href={`/officer/${app.id}`}
-          className="inline-flex items-center space-x-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to Case Cockpit</span>
-        </Link>
-
-        {/* Toggle Report Mode */}
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setReportType('deficiency_notice')}
-            className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-all ${
-              reportType === 'deficiency_notice'
-                ? 'bg-amber-100 text-amber-900 border-amber-300 shadow-xs'
-                : 'bg-white text-slate-600 border-slate-200'
-            }`}
+    <GovLayout role="officer" activeTab="reports">
+      <div className="max-w-5xl mx-auto space-y-6">
+        {/* Top Action Bar (Hidden in Print) */}
+        <div className="print:hidden flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-[6px] border border-[#D0D7E2] shadow-xs">
+          <Link
+            href={`/officer/${app.id}`}
+            className="inline-flex items-center space-x-1.5 text-xs font-semibold text-[#0B2E5C] hover:text-[#1D4E9E]"
           >
-            Pre-Scrutiny Deficiency Report
-          </button>
-          <button
-            onClick={() => setReportType('eoa_order')}
-            className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-all ${
-              reportType === 'eoa_order'
-                ? 'bg-emerald-100 text-emerald-900 border-emerald-300 shadow-xs'
-                : 'bg-white text-slate-600 border-slate-200'
-            }`}
-          >
-            Formal EoA Approval Order
-          </button>
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to Case Cockpit</span>
+          </Link>
 
-          <button
-            onClick={handlePrint}
-            className="flex items-center space-x-1.5 bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs px-4 py-1.5 rounded-lg shadow-sm"
-          >
-            <Printer className="w-4 h-4" />
-            <span>Print / Save as PDF</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Official Government Document Canvas */}
-      <div className="bg-white p-8 sm:p-14 rounded-2xl shadow-xl border border-slate-200 space-y-8 text-slate-900 print:shadow-none print:border-none print:p-0">
-        {/* Official Letterhead */}
-        <div className="text-center border-b-2 border-slate-900 pb-6 space-y-1">
-          <div className="text-xs font-bold tracking-widest uppercase text-slate-500">
-            GOVERNMENT OF INDIA • MINISTRY OF EDUCATION
-          </div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-950 uppercase tracking-tight">
-            ALL INDIA COUNCIL FOR TECHNICAL EDUCATION
-          </h1>
-          <div className="text-xs font-medium text-slate-600">
-            Nelson Mandela Marg, Vasant Kunj, New Delhi-110070 | Phone: 011-29581000 | Website: www.aicte-india.org
-          </div>
-          <div className="text-xs font-bold text-blue-950 pt-2 tracking-wide uppercase">
-            REGULATION BUREAU • EXTENSION OF APPROVAL (EoA) SCRUTINY COMMITTEE
+          {/* Toggle Report Mode */}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setReportType('deficiency_notice')}
+              className={`text-xs font-bold px-3 py-1.5 rounded-[4px] border transition-all ${
+                reportType === 'deficiency_notice'
+                  ? 'bg-amber-100 text-amber-900 border-amber-300 shadow-xs'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              Pre-Scrutiny Deficiency Report
+            </button>
+            <button
+              onClick={() => setReportType('eoa_order')}
+              className={`text-xs font-bold px-3 py-1.5 rounded-[4px] border transition-all ${
+                reportType === 'eoa_order'
+                  ? 'bg-emerald-100 text-emerald-900 border-emerald-300 shadow-xs'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              Formal EoA Approval Order
+            </button>
+            <button
+              onClick={handlePrint}
+              className="inline-flex items-center space-x-1.5 text-xs font-bold bg-[#0B2E5C] hover:bg-[#1D4E9E] text-white px-3.5 py-1.5 rounded-[4px] shadow-xs transition-colors"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Print / Save as PDF</span>
+            </button>
           </div>
         </div>
 
-        {/* Reference Number & Date */}
-        <div className="flex justify-between items-start text-xs font-mono font-semibold">
-          <div>
-            <p>
-              <strong>Ref. No:</strong> AICTE/REG/2026/SCRUTINY/{app.institution?.state?.substring(0, 3).toUpperCase()}-{app.institution?.aicte_id}
+        {/* Printable Official Government Letterhead Sheet */}
+        <div className="bg-white p-8 sm:p-12 rounded-[6px] border border-[#D0D7E2] shadow-xs print:border-none print:shadow-none print:p-0 space-y-6 text-[#1A1A1A]">
+          {/* Header Strip with Ashoka Pillar & AICTE Official Headers */}
+          <div className="text-center space-y-1.5 border-b-2 border-slate-900 pb-5">
+            <p className="text-[11px] font-semibold tracking-wider text-slate-600 uppercase">
+              Government of India • Ministry of Education
             </p>
-            <p>
-              <strong>Application ID:</strong> {app.id.toUpperCase()} (Cycle 2026-27)
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-tight">
+              All India Council for Technical Education
+            </h1>
+            <p className="text-xs text-slate-600">
+              Nelson Mandela Marg, Vasant Kunj, New Delhi-110070 | Phone: 011-29581000 | Website: www.aicte-india.org
+            </p>
+            <p className="text-xs font-bold text-blue-950 uppercase tracking-wide pt-1">
+              Regulation Bureau • Extension of Approval (EoA) Scrutiny Committee
             </p>
           </div>
-          <div className="text-right">
-            <p>
-              <strong>Date of Scrutiny:</strong> {today}
-            </p>
-            <p>
-              <strong>Mode:</strong> AICTE NirikshAI Decision-Support System
-            </p>
-          </div>
-        </div>
 
-        {/* Addressee */}
-        <div className="text-xs space-y-1">
-          <p className="font-bold">To,</p>
-          <p className="font-bold text-slate-900">{app.institution?.name}</p>
-          <p className="text-slate-600">Affiliated to: {app.institution?.university}</p>
-          <p className="text-slate-600">State: {app.institution?.state} | Permanent AICTE Institute ID: {app.institution?.aicte_id}</p>
-        </div>
-
-        {/* Document Mode 1: Deficiency Notice */}
-        {reportType === 'deficiency_notice' ? (
-          <div className="space-y-6">
+          {/* Letter Metadata */}
+          <div className="flex justify-between items-start text-xs border-b border-slate-200 pb-3 font-mono">
             <div>
-              <h2 className="text-sm font-black uppercase text-amber-950 bg-amber-50 p-2.5 rounded border border-amber-200">
-                SUBJECT: PRE-SCRUTINY DEFICIENCY NOTICE UNDER AICTE APPROVAL PROCESS HANDBOOK (APH 2024-27)
-              </h2>
+              <p>
+                <strong>Ref. No:</strong> AICTE/REG/2026/SCRUTINY/{app.institution?.state?.substring(0, 3).toUpperCase()}-{app.institution?.aicte_id}
+              </p>
+              <p>
+                <strong>Application ID:</strong> {app.id.toUpperCase()} (Cycle {app.academic_year})
+              </p>
             </div>
+            <div className="text-right">
+              <p>
+                <strong>Date of Scrutiny:</strong> {today}
+              </p>
+              <p>
+                <strong>Mode:</strong> AICTE NirikshAI Decision-Support System
+              </p>
+            </div>
+          </div>
 
-            <p className="text-xs text-slate-700 leading-relaxed">
-              Sir / Madam,
-              <br /><br />
-              The annual Extension of Approval (EoA) application submitted by your institution for the Academic Session <strong>2026-27</strong> has been examined by the Scrutiny Committee through the <strong>NirikshAI AI-Powered Regulatory Validation Engine</strong>.
-              On comparison of your submitted documentation against the provisions of the AICTE Approval Process Handbook (APH 2024-27) and authorized national records, the following discrepancies and non-compliances were formally recorded:
+          {/* Recipient Institution Address */}
+          <div className="text-xs space-y-1 text-slate-800">
+            <p className="font-bold">To,</p>
+            <p className="font-bold text-slate-900 text-sm">{app.institution?.name}</p>
+            <p className="text-slate-600">Affiliated to: {app.institution?.university}</p>
+            <p className="text-slate-600">State: {app.institution?.state} | Permanent AICTE Institute ID: {app.institution?.aicte_id}</p>
+          </div>
+
+          {/* Subject Line */}
+          <div className="bg-amber-50/80 border-l-4 border-amber-500 p-3 text-xs">
+            <p className="font-bold text-slate-900 uppercase">
+              {reportType === 'deficiency_notice'
+                ? 'Subject: Pre-Scrutiny Deficiency Notice under AICTE Approval Process Handbook (APH 2024-27)'
+                : 'Subject: Grant of Extension of Approval (EoA) for Academic Year 2026-27'}
             </p>
+          </div>
 
-            {/* Findings Table */}
-            <div className="border border-slate-300 rounded-lg overflow-hidden">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-100 border-b border-slate-300 font-bold text-slate-700">
-                    <th className="p-2.5">S.No.</th>
-                    <th className="p-2.5">Handbook Clause</th>
-                    <th className="p-2.5">Deficiency Classification</th>
-                    <th className="p-2.5">Observed Value vs Prescribed Norm</th>
-                    <th className="p-2.5">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {(!app.findings || app.findings.length === 0) ? (
-                    <tr>
-                      <td colSpan={5} className="p-4 text-center text-emerald-700 font-bold">
-                        Zero discrepancies recorded. All regulatory conditions satisfied.
-                      </td>
-                    </tr>
-                  ) : (
-                    app.findings.map((fnd, idx) => (
-                      <tr key={fnd.id} className="hover:bg-slate-50">
-                        <td className="p-2.5 font-bold">{idx + 1}</td>
-                        <td className="p-2.5 font-mono font-bold text-amber-900">{fnd.evidence.clause}</td>
-                        <td className="p-2.5 font-semibold">{fnd.message}</td>
-                        <td className="p-2.5 font-mono text-[11px] text-slate-600">
-                          Claimed: {fnd.evidence.extracted_value || 'N/A'}<br />
-                          Required: {fnd.evidence.expected_value}
-                        </td>
-                        <td className="p-2.5 font-bold uppercase text-[10px] text-rose-700">
-                          {fnd.status}
-                        </td>
+          {/* Body Content */}
+          <div className="text-xs space-y-4 leading-relaxed text-slate-800">
+            <p>Sir / Madam,</p>
+
+            {reportType === 'deficiency_notice' ? (
+              <>
+                <p>
+                  In terms of the provisions under the All India Council for Technical Education (Grant of Approvals for Technical Institutions) Regulations and norms prescribed under the Approval Process Handbook 2024-27, the initial pre-scrutiny examination of your application submitted for Extension of Approval (EoA) 2026-27 has been processed by the Scrutiny Division.
+                </p>
+                <p>
+                  During the AI-assisted regulatory verification, the following <strong className="text-rose-700">regulatory discrepancies and deficiency findings</strong> were detected across the uploaded documentation and official registry cross-checks:
+                </p>
+
+                {/* Deficiencies Table */}
+                <div className="border border-slate-300 rounded overflow-hidden mt-3">
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-slate-100 text-slate-800 font-bold border-b border-slate-300">
+                      <tr>
+                        <th className="p-2 border-r border-slate-300">#</th>
+                        <th className="p-2 border-r border-slate-300">Handbook Clause</th>
+                        <th className="p-2 border-r border-slate-300">Deficiency Description</th>
+                        <th className="p-2 border-r border-slate-300">Extracted vs Expected Value</th>
+                        <th className="p-2">Severity</th>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {app.findings?.map((f, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50">
+                          <td className="p-2 border-r border-slate-300 font-bold">{idx + 1}</td>
+                          <td className="p-2 border-r border-slate-300 font-mono font-semibold text-blue-900">
+                            {f.evidence?.clause || 'APH 2024-27 §4.1'}
+                          </td>
+                          <td className="p-2 border-r border-slate-300">
+                            <p className="font-semibold text-slate-900">{f.message}</p>
+                            <p className="text-[10px] text-slate-500 font-mono mt-0.5">Rule ID: {f.rule_id}</p>
+                          </td>
+                          <td className="p-2 border-r border-slate-300 font-mono text-[11px]">
+                            <p><span className="text-slate-500">Submitted:</span> <span className="text-rose-700 font-bold">{f.evidence?.extracted_value || 'None'}</span></p>
+                            <p><span className="text-slate-500">Required:</span> <span className="text-emerald-700 font-bold">{f.evidence?.expected_value || 'Compliant'}</span></p>
+                          </td>
+                          <td className="p-2 uppercase font-bold text-[10px]">
+                            <span className={f.severity === 'blocking' ? 'text-rose-600 bg-rose-50 px-1 py-0.5 rounded border border-rose-200' : 'text-amber-600 bg-amber-50 px-1 py-0.5 rounded border border-amber-200'}>
+                              {f.severity}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
 
-            <div className="space-y-2 text-xs text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-lg border border-slate-200">
-              <h3 className="font-bold text-slate-900">STATUTORY RECTIFICATION INSTRUCTIONS:</h3>
-              <p>
-                1. In accordance with Chapter IV of the Approval Process Handbook, the institution is granted an opportunity to rectify the listed deficiencies through the <strong>NirikshAI Institution Portal</strong> within <strong>15 calendar days</strong> of this notice.
-              </p>
-              <p>
-                2. Upload valid stamp-paper affidavits, unexpired State NOCs, and fee settlements as indicated above. Failure to submit compliant rectification within the stipulated timeline will automatically refer the matter to the Standing Appellate Committee (SAC).
-              </p>
-            </div>
+                <div className="bg-slate-100 p-3 rounded border border-slate-200 mt-4 text-[11px] space-y-1">
+                  <p className="font-bold text-slate-900">Instructions for Rectification:</p>
+                  <p>1. The institution is requested to rectify the deficiencies noted above and upload self-attested supporting certificates through the NirikshAI Institution Portal within <strong>14 calendar days</strong> from the receipt of this communication.</p>
+                  <p>2. Re-scrutiny will be conducted automatically upon submission. In the event of non-compliance, the case shall be placed before the Regional Hearing Committee (RHC) for appropriate regulatory action.</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <p>
+                  In terms of the provisions under the All India Council for Technical Education (Grant of Approvals for Technical Institutions) Regulations, the Council hereby conveys its <strong className="text-emerald-700">Extension of Approval (EoA)</strong> to <strong>{app.institution?.name}</strong> to conduct technical programmes with the approved intakes for the Academic Year 2026-27.
+                </p>
+
+                {/* Approved Courses Table */}
+                <div className="border border-slate-300 rounded overflow-hidden mt-3">
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-slate-100 text-slate-800 font-bold border-b border-slate-300">
+                      <tr>
+                        <th className="p-2 border-r border-slate-300">Programme</th>
+                        <th className="p-2 border-r border-slate-300">Level</th>
+                        <th className="p-2 border-r border-slate-300">Affiliating Body</th>
+                        <th className="p-2">Sanctioned Intake (2026-27)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      <tr>
+                        <td className="p-2 border-r border-slate-300 font-semibold">Engineering &amp; Technology</td>
+                        <td className="p-2 border-r border-slate-300">Under Graduate</td>
+                        <td className="p-2 border-r border-slate-300">{app.institution?.university}</td>
+                        <td className="p-2 font-bold text-emerald-800">420 Seats (Approved)</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="bg-emerald-50 p-3 rounded border border-emerald-200 mt-4 text-[11px] text-emerald-900">
+                  <p className="font-bold">Compliance Status: Fully Verified (Zero Deficiencies)</p>
+                  <p>All mandatory documents (affidavits, state NOC, fee settlement, land compliance) have been cryptographically validated against authorized AICTE registries.</p>
+                </div>
+              </>
+            )}
           </div>
-        ) : (
-          /* Document Mode 2: Formal EoA Order */
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-sm font-black uppercase text-emerald-950 bg-emerald-50 p-2.5 rounded border border-emerald-200">
-                ORDER: EXTENSION OF APPROVAL (EoA) FOR ACADEMIC YEAR 2026-27
-              </h2>
-            </div>
 
-            <p className="text-xs text-slate-700 leading-relaxed">
-              In terms of the provisions under the All India Council for Technical Education (Grant of Approvals for Technical Institutions) Regulations, 2020 notified on 4th February 2020 and amended periodically, and the norms, standards, procedures and conditions prescribed by the Council from time to time:
-              <br /><br />
-              I am directed to convey the approval of the Council to <strong>{app.institution?.name}</strong> for conduct of technical courses with the sanctioned intake indicated below for the Academic Year <strong>2026-27</strong>:
-            </p>
-
-            {/* Approved Intake Table */}
-            <div className="border border-slate-300 rounded-lg overflow-hidden">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-100 border-b border-slate-300 font-bold text-slate-700">
-                    <th className="p-2.5">Programme</th>
-                    <th className="p-2.5">Level</th>
-                    <th className="p-2.5">Course / Discipline</th>
-                    <th className="p-2.5">Affiliating Body</th>
-                    <th className="p-2.5 text-right">Approved Intake (2026-27)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 font-medium">
-                  <tr>
-                    <td className="p-2.5 font-bold">Engineering & Tech</td>
-                    <td className="p-2.5">Undergraduate</td>
-                    <td className="p-2.5">Computer Engineering</td>
-                    <td className="p-2.5">{app.institution?.university}</td>
-                    <td className="p-2.5 text-right font-mono font-bold text-blue-900">180</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2.5 font-bold">Engineering & Tech</td>
-                    <td className="p-2.5">Undergraduate</td>
-                    <td className="p-2.5">Information Technology</td>
-                    <td className="p-2.5">{app.institution?.university}</td>
-                    <td className="p-2.5 text-right font-mono font-bold text-blue-900">120</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2.5 font-bold">Engineering & Tech</td>
-                    <td className="p-2.5">Undergraduate</td>
-                    <td className="p-2.5">Electronics & Telecommunication</td>
-                    <td className="p-2.5">{app.institution?.university}</td>
-                    <td className="p-2.5 text-right font-mono font-bold text-blue-900">120</td>
-                  </tr>
-                  <tr className="bg-slate-50 font-bold">
-                    <td colSpan={4} className="p-2.5 uppercase">Total Sanctioned Annual Intake</td>
-                    <td className="p-2.5 text-right font-mono text-emerald-800 text-sm">{app.institution?.records?.approved_intake || 420}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <p className="text-[11px] text-slate-600 leading-relaxed italic">
-              Note: The approval is subject to condition that the institution shall follow all AICTE norms regarding faculty cadre-ratio, barrier-free access, anti-ragging compliance, and infrastructure guidelines published in APH 2024-27.
-            </p>
-          </div>
-        )}
-
-        {/* Official Sign-off & Verification Footer */}
-        <div className="pt-8 border-t border-slate-300 flex justify-between items-end">
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2 text-xs font-mono text-slate-600">
-              <QrCode className="w-10 h-10 text-slate-800" />
-              <div>
-                <p className="font-bold">Cryptographically Authenticated</p>
-                <p className="text-[10px]">Hash-chain block #4 • SHA-256 Verified</p>
-                <p className="text-[10px]">Verify at: aicte-india.org/verify</p>
+          {/* Official Signatures & Digital Seal */}
+          <div className="pt-8 border-t border-slate-300 flex justify-between items-end text-xs">
+            {/* QR Verification Seal */}
+            <div className="flex items-center space-x-3 bg-slate-50 p-2.5 rounded border border-slate-200">
+              <QrCode className="w-12 h-12 text-slate-800 shrink-0" />
+              <div className="text-[10px] text-slate-600 font-mono">
+                <p className="font-bold text-slate-900">Digital Verification QR</p>
+                <p>Scan to verify legal validity</p>
+                <p className="text-[9px] text-slate-400">SHA-256: 7f8a9b2c...sealed</p>
               </div>
             </div>
-          </div>
 
-          <div className="text-right space-y-1">
-            <div className="font-serif italic text-slate-400 text-xs pb-1">
-              [Digitally Signed by Regulation Bureau]
-            </div>
-            <div className="font-bold text-xs text-slate-900">
-              (Dr. Scrutiny Officer, AICTE)
-            </div>
-            <div className="text-[11px] text-slate-500">
-              Advisor-II (Approval Bureau), AICTE New Delhi
+            {/* Officer Sign-off Block */}
+            <div className="text-right space-y-1">
+              <div className="font-bold text-slate-900 text-sm">Member Secretary / Advisor (Approval)</div>
+              <p className="text-slate-600">Regulation Bureau, AICTE</p>
+              <p className="text-[10px] text-slate-500 font-mono">Digitally signed on: {today}</p>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </GovLayout>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import GovLayout from '@/components/gov/GovLayout';
 import { Application, DocumentItem, TamperIndicator } from '@/lib/types';
 import { getStoredApplications } from '@/lib/store';
 import { AlertTriangle, ShieldAlert, FileText, Search, CheckCircle, Info, ArrowRight } from 'lucide-react';
@@ -25,7 +26,8 @@ export default function TamperForensicsPage() {
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <GovLayout role="officer" activeTab="reports">
+      <div className="space-y-6">
       {/* Header */}
       <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -142,5 +144,6 @@ export default function TamperForensicsPage() {
         </div>
       </div>
     </div>
+    </GovLayout>
   );
 }

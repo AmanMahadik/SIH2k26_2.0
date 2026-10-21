@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import GovLayout from '@/components/gov/GovLayout';
 import { BarChart3, CheckCircle, Clock, Zap, ShieldAlert, Cpu, FileCheck } from 'lucide-react';
 
 export default function MetricsPage() {
@@ -88,7 +89,8 @@ export default function MetricsPage() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <GovLayout role="senior" activeTab="reports">
+      <div className="space-y-6">
       {/* Header */}
       <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -146,6 +148,7 @@ export default function MetricsPage() {
           In strict compliance with the problem statement guidelines, all metrics shown are computed against an authorized synthetic benchmark dataset created with ground-truth defect labels. As documented in Section 16 of the Technical Report: synthetic tests establish the correctness of our rule engine, state transitions, and forensic pipelines; live production accuracy on degraded photocopies will be calibrated during pilot testing with AICTE regional offices.
         </p>
       </div>
-    </div>
+          </div>
+    </GovLayout>
   );
 }
