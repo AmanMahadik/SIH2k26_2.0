@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import GovLayout from '@/components/gov/GovLayout';
 import {
   BarChart3,
@@ -19,6 +19,29 @@ import { getStoredAuditLog, saveStoredAuditLog, resetDemoData } from '@/lib/stor
 export default function AuditorDashboardPage() {
   const [activeTab, setActiveTab] = useState('home');
   const [logs, setLogs] = useState(getStoredAuditLog());
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/audit')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+          // Format into AuditEvent shape
+          const formatted = data.data.map((row: any) => ({
+            id: Number(row.id),
+            actor: row.actor,
+            action: row.action,
+            entity: row.entity,
+            payload: typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload,
+            prevHash: row.prev_hash,
+            hash: row.hash,
+            at: row.at,
+          })).sort((a: any, b: any) => a.id - b.id);
+          setLogs(formatted);
+        }
+      })
+      .catch((err) => console.error('Error fetching audit logs:', err));
+  }, []);
   const [verifyStatus, setVerifyStatus] = useState<{
     tested: boolean;
     valid?: boolean;
@@ -87,7 +110,7 @@ export default function AuditorDashboardPage() {
                     <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
                       Total Audits
                     </p>
-                    <h3 className="text-4xl font-extrabold text-[#0B2E5C] mt-1">124</h3>
+                    <h3 className="text-4xl font-extrabold text-[#0B2E5C] mt-1">{logs.length}</h3>
                     <p className="text-[11px] text-emerald-700 font-medium mt-1">
                       100% Cryptographically Sealed via SHA-256
                     </p>

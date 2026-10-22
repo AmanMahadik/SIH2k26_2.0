@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import GovLayout from '@/components/gov/GovLayout';
 import {
@@ -36,15 +36,43 @@ export default function InstitutionDashboardPage() {
 
   // Institution Profile State
   const [profileData, setProfileData] = useState({
-    name: 'ABC Engineering College',
-    aicteId: 'AICTE-12345',
+    name: 'Pune Institute of Computer Technology',
+    aicteId: '1-10972348121',
     affiliation: 'Savitribai Phule Pune University',
     established: '1983',
-    principal: 'Dr. S. K. Patil',
-    email: 'principal@abccollege.edu.in',
+    principal: 'Dr. P. T. Kulkarni',
+    email: 'principal@pict.edu',
     phone: '+91 20 2437 1101',
     landArea: '18.5 Acres (Barrier-free compliant)',
   });
+
+  const [liveAlerts, setLiveAlerts] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('/api/institutions')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+          const first = data.data[0];
+          setProfileData((prev) => ({
+            ...prev,
+            name: first.name,
+            aicteId: first.aicte_id,
+            affiliation: first.university || prev.affiliation,
+          }));
+        }
+      })
+      .catch((err) => console.error('Error fetching institution profile:', err));
+
+    fetch('/api/alerts')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data)) {
+          setLiveAlerts(data.data);
+        }
+      })
+      .catch((err) => console.error('Error fetching alerts:', err));
+  }, []);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -88,7 +116,7 @@ export default function InstitutionDashboardPage() {
             {/* 1. Welcome Banner */}
             <div className="bg-[#E8F0FB] border border-[#BBD5F8] rounded-[6px] px-5 py-3.5 flex items-center justify-between text-xs sm:text-sm text-[#0B2E5C] shadow-xs">
               <div>
-                <span className="font-extrabold text-[#0B2E5C]">Welcome, ABC Engineering College!</span>{' '}
+                <span className="font-extrabold text-[#0B2E5C]">Welcome, {profileData.name}!</span>{' '}
                 <span className="text-slate-700">Let&apos;s complete your EoA application for 2026-27.</span>
               </div>
               <span className="hidden sm:inline-flex text-[11px] font-semibold bg-white border border-[#BBD5F8] px-2.5 py-0.5 rounded-full text-[#1D4E9E]">
@@ -197,29 +225,38 @@ export default function InstitutionDashboardPage() {
                 </div>
 
                 <div className="py-2.5 space-y-2.5 text-xs">
-                  <div className="flex items-start space-x-2">
-                    <span className="w-2 h-2 rounded-full bg-[#E8801A] mt-1.5 shrink-0" />
-                    <div className="flex-1">
-                      <div className="text-slate-800 font-medium leading-tight">Document verification pending</div>
-                      <div className="text-[10px] text-slate-400">2 hours ago</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start space-x-2">
-                    <span className="w-2 h-2 rounded-full bg-[#1E7B34] mt-1.5 shrink-0" />
-                    <div className="flex-1">
-                      <div className="text-slate-800 font-medium leading-tight">Upload window extended to 31 Oct 2026</div>
-                      <div className="text-[10px] text-slate-400">1 day ago</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start space-x-2">
-                    <span className="w-2 h-2 rounded-full bg-[#1D4E9E] mt-1.5 shrink-0" />
-                    <div className="flex-1">
-                      <div className="text-slate-800 font-medium leading-tight">EoA guidelines updated</div>
-                      <div className="text-[10px] text-slate-400">2 days ago</div>
-                    </div>
-                  </div>
+                  {liveAlerts.length > 0 ? (
+                    liveAlerts.slice(0, 3).map((a, i) => (
+                      <div key={a.id || i} className="flex items-start space-x-2">
+                        <span className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
+                          a.type === 'tamper' ? 'bg-[#B42318]' : a.type === 'discrepancy' ? 'bg-[#E8801A]' : 'bg-[#1D4E9E]'
+                        }`} />
+                        <div className="flex-1">
+                          <div className="text-slate-800 font-medium leading-tight">{a.message}</div>
+                          <div className="text-[10px] text-slate-400">
+                            {a.sent_at ? new Date(a.sent_at).toLocaleDateString() : 'Active'}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <>
+                      <div className="flex items-start space-x-2">
+                        <span className="w-2 h-2 rounded-full bg-[#E8801A] mt-1.5 shrink-0" />
+                        <div className="flex-1">
+                          <div className="text-slate-800 font-medium leading-tight">Document verification pending</div>
+                          <div className="text-[10px] text-slate-400">2 hours ago</div>
+                        </div>
+                      </div>
+                      <div className="flex items-start space-x-2">
+                        <span className="w-2 h-2 rounded-full bg-[#1E7B34] mt-1.5 shrink-0" />
+                        <div className="flex-1">
+                          <div className="text-slate-800 font-medium leading-tight">Upload window active for AY 2026-27</div>
+                          <div className="text-[10px] text-slate-400">Azure Sync</div>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="pt-2 border-t border-slate-100 text-right">

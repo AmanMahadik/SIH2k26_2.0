@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import GovLayout from '@/components/gov/GovLayout';
 import {
@@ -15,81 +15,83 @@ import {
   Search,
   Filter,
   ShieldCheck,
-  ExternalLink,
-  BookOpen,
+  RefreshCw,
 } from 'lucide-react';
+
+interface ApplicationRow {
+  id: string;
+  rawId: string;
+  institution: string;
+  aicteId: string;
+  state: string;
+  university?: string;
+  submittedOn: string;
+  status: string;
+  statusColor: string;
+  caseId: string;
+  category: string;
+  deficiencies: number;
+  priority: number;
+}
 
 export default function OfficerDashboardPage() {
   const [activeTab, setActiveTab] = useState('home');
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const allApps = [
-    {
-      id: 'EA-2026-0452',
-      institution: 'ABC Engineering College (PICT)',
-      submittedOn: '18 Oct 2026',
-      status: 'Under Review',
-      statusColor: 'bg-blue-50 text-[#1D4E9E] border-blue-200',
-      caseId: 'app-1',
-      category: 'Extension of Approval',
-      deficiencies: 0,
-    },
-    {
-      id: 'EA-2026-0451',
-      institution: 'Delhi College of Engineering & Tech',
-      submittedOn: '17 Oct 2026',
-      status: 'Needs Clarification',
-      statusColor: 'bg-orange-50 text-[#E8801A] border-orange-200',
-      caseId: 'app-2',
-      category: 'Extension of Approval',
-      deficiencies: 2,
-    },
-    {
-      id: 'EA-2026-0450',
-      institution: 'Apex Technical Campus',
-      submittedOn: '17 Oct 2026',
-      status: 'Under Review',
-      statusColor: 'bg-blue-50 text-[#1D4E9E] border-blue-200',
-      caseId: 'app-3',
-      category: 'Extension of Approval',
-      deficiencies: 1,
-    },
-    {
-      id: 'EA-2026-0449',
-      institution: 'National Institute of Management & Science',
-      submittedOn: '16 Oct 2026',
-      status: 'Needs Clarification',
-      statusColor: 'bg-orange-50 text-[#E8801A] border-orange-200',
-      caseId: 'app-4',
-      category: 'Extension of Approval',
-      deficiencies: 1,
-    },
-    {
-      id: 'EA-2026-0448',
-      institution: 'Maharashtra Institute of Tech',
-      submittedOn: '15 Oct 2026',
-      status: 'Verified',
-      statusColor: 'bg-emerald-50 text-[#1E7B34] border-emerald-200',
-      caseId: 'app-1',
-      category: 'Extension of Approval',
-      deficiencies: 0,
-    },
-    {
-      id: 'EA-2026-0447',
-      institution: 'St. Xavier Technical Campus',
-      submittedOn: '14 Oct 2026',
-      status: 'Rejected',
-      statusColor: 'bg-rose-50 text-[#B42318] border-rose-200',
-      caseId: 'app-3',
-      category: 'Extension of Approval',
-      deficiencies: 3,
-    },
-  ];
+  // Live Azure DB stats
+  const [stats, setStats] = useState({
+    pending: 4,
+    verified: 1,
+    needs_review: 3,
+    rejected: 0,
+    total_applications: 4,
+  });
 
-  const filteredApps = allApps.filter((app) => {
-    const matchesFilter = filterStatus === 'all' || app.status.toLowerCase().replace(/\s+/g, '_') === filterStatus;
-    const matchesSearch = app.institution.toLowerCase().includes(searchQuery.toLowerCase()) || app.id.toLowerCase().includes(searchQuery.toLowerCase());
+  // Live Azure DB applications
+  const [applications, setApplications] = useState<ApplicationRow[]>([]);
+
+  const fetchAzureData = async () => {
+    try {
+      setLoading(true);
+      const [statsRes, appsRes] = await Promise.all([
+        fetch('/api/stats').then((r) => r.json()),
+        fetch('/api/applications').then((r) => r.json()),
+      ]);
+
+      if (statsRes.success && statsRes.data) {
+        setStats({
+          pending: statsRes.data.pending,
+          verified: statsRes.data.verified,
+          needs_review: statsRes.data.needs_review,
+          rejected: statsRes.data.rejected,
+          total_applications: statsRes.data.total_applications,
+        });
+      }
+
+      if (appsRes.success && Array.isArray(appsRes.data)) {
+        setApplications(appsRes.data);
+      }
+    } catch (err) {
+      console.error('Failed to load data from Azure DB:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAzureData();
+  }, []);
+
+  const filteredApps = applications.filter((app) => {
+    const matchesFilter =
+      filterStatus === 'all' ||
+      app.status.toLowerCase().replace(/\s+/g, '_') === filterStatus;
+    const matchesSearch =
+      app.institution.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      app.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      app.aicteId?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
@@ -97,17 +99,39 @@ export default function OfficerDashboardPage() {
     <GovLayout role="officer" activeTab={activeTab} onTabChange={setActiveTab}>
       <div className="space-y-6">
         {/* ========================================================================= */}
-        {/* TAB 1: HOME (Exact match to Mockup Bottom-Left Montage)                   */}
+        {/* TAB 1: HOME (Azure DB Live Scrutiny Dashboard)                            */}
         {/* ========================================================================= */}
         {activeTab === 'home' && (
           <div className="space-y-6">
-            {/* 1. Four KPI Cards in a Row */}
+            {/* Top Bar with Live Azure Connection Badge and Refresh */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-[6px] border border-[#D0D7E2] shadow-xs">
+              <div className="flex items-center space-x-2 text-xs">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="font-semibold text-slate-800">
+                  Azure Database for PostgreSQL (Central India):
+                </span>
+                <span className="font-mono text-slate-600">aicte-nirikshai-db.postgres.database.azure.com</span>
+              </div>
+              <button
+                type="button"
+                onClick={fetchAzureData}
+                disabled={loading}
+                className="inline-flex items-center space-x-1.5 text-xs font-bold text-[#0B2E5C] hover:bg-[#EEF3FA] px-3 py-1.5 rounded border border-[#D0D7E2] transition-colors"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                <span>Sync with Azure</span>
+              </button>
+            </div>
+
+            {/* 1. Four KPI Cards in a Row – Real Azure Database Values */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {/* Card 1: Pending */}
               <div className="bg-[#E8F0FB] rounded-[6px] border border-[#BBD5F8] p-4.5 shadow-xs flex items-center justify-between">
                 <div>
                   <p className="text-xs font-bold text-[#1D4E9E] uppercase tracking-wide">Pending</p>
-                  <h3 className="text-2xl sm:text-3xl font-extrabold text-[#0B2E5C] mt-1">48</h3>
+                  <h3 className="text-2xl sm:text-3xl font-extrabold text-[#0B2E5C] mt-1">
+                    {loading ? '...' : stats.pending}
+                  </h3>
                 </div>
                 <div className="w-10 h-10 rounded-full bg-white/80 border border-blue-200 flex items-center justify-center text-[#1D4E9E]">
                   <FileText className="w-5 h-5" />
@@ -118,7 +142,9 @@ export default function OfficerDashboardPage() {
               <div className="bg-[#E6F4EA] rounded-[6px] border border-[#A6E9B9] p-4.5 shadow-xs flex items-center justify-between">
                 <div>
                   <p className="text-xs font-bold text-[#1E7B34] uppercase tracking-wide">Verified</p>
-                  <h3 className="text-2xl sm:text-3xl font-extrabold text-[#1E7B34] mt-1">120</h3>
+                  <h3 className="text-2xl sm:text-3xl font-extrabold text-[#1E7B34] mt-1">
+                    {loading ? '...' : stats.verified}
+                  </h3>
                 </div>
                 <div className="w-10 h-10 rounded-full bg-white/80 border border-green-200 flex items-center justify-center text-[#1E7B34]">
                   <CheckCircle2 className="w-5 h-5" />
@@ -129,7 +155,9 @@ export default function OfficerDashboardPage() {
               <div className="bg-[#FDF0E3] rounded-[6px] border border-[#FCD5B5] p-4.5 shadow-xs flex items-center justify-between">
                 <div>
                   <p className="text-xs font-bold text-[#E8801A] uppercase tracking-wide">Needs Review</p>
-                  <h3 className="text-2xl sm:text-3xl font-extrabold text-[#E8801A] mt-1">15</h3>
+                  <h3 className="text-2xl sm:text-3xl font-extrabold text-[#E8801A] mt-1">
+                    {loading ? '...' : stats.needs_review}
+                  </h3>
                 </div>
                 <div className="w-10 h-10 rounded-full bg-white/80 border border-orange-200 flex items-center justify-center text-[#E8801A]">
                   <AlertTriangle className="w-5 h-5" />
@@ -143,7 +171,9 @@ export default function OfficerDashboardPage() {
               >
                 <div>
                   <p className="text-xs font-bold text-[#B42318] uppercase tracking-wide">Rejected</p>
-                  <h3 className="text-2xl sm:text-3xl font-extrabold text-[#B42318] mt-1">7</h3>
+                  <h3 className="text-2xl sm:text-3xl font-extrabold text-[#B42318] mt-1">
+                    {loading ? '...' : stats.rejected}
+                  </h3>
                 </div>
                 <div className="w-10 h-10 rounded-full bg-white/80 border border-rose-200 flex items-center justify-center text-[#B42318]">
                   <FileX2 className="w-5 h-5" />
@@ -157,7 +187,7 @@ export default function OfficerDashboardPage() {
               <div className="lg:col-span-8 bg-white rounded-[6px] border border-[#D0D7E2] p-5 shadow-xs space-y-4">
                 <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                   <h2 className="text-sm font-bold text-[#0B2E5C]">
-                    Pending Applications
+                    Pending Applications (Azure Database)
                   </h2>
                   <button
                     type="button"
@@ -173,47 +203,66 @@ export default function OfficerDashboardPage() {
                     <thead className="bg-[#EEF3FA] text-[#0B2E5C] font-bold border-y border-[#D0D7E2]">
                       <tr>
                         <th className="py-2.5 px-3">Application ID</th>
-                        <th className="py-2.5 px-3">Institution</th>
-                        <th className="py-2.5 px-3">Submitted On</th>
+                        <th className="py-2.5 px-3">Institution Name</th>
+                        <th className="py-2.5 px-3">State</th>
                         <th className="py-2.5 px-3">Status</th>
                         <th className="py-2.5 px-3 text-right">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-slate-700">
-                      {allApps.slice(0, 3).map((row) => (
-                        <tr key={row.id} className="hover:bg-slate-50 transition-colors">
-                          <td className="py-3 px-3 font-mono font-bold text-[#0B2E5C]">
-                            {row.id}
-                          </td>
-                          <td className="py-3 px-3 font-medium">
-                            {row.institution}
-                          </td>
-                          <td className="py-3 px-3 text-slate-500 font-mono">
-                            {row.submittedOn}
-                          </td>
-                          <td className="py-3 px-3">
-                            <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold border ${row.statusColor}`}>
-                              {row.status}
-                            </span>
-                          </td>
-                          <td className="py-3 px-3 text-right">
-                            <Link
-                              href={`/officer/${row.caseId}`}
-                              className="inline-flex items-center space-x-1 px-3 py-1 border border-[#0B2E5C] text-[#0B2E5C] hover:bg-[#E8F0FB] text-xs font-bold rounded-[4px] transition-colors"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                              <span>Review</span>
-                            </Link>
+                      {loading ? (
+                        <tr>
+                          <td colSpan={5} className="py-8 text-center text-slate-500 font-mono">
+                            Connecting to Azure Database for PostgreSQL...
                           </td>
                         </tr>
-                      ))}
+                      ) : applications.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="py-8 text-center text-slate-500">
+                            No applications currently found in Azure Database.
+                          </td>
+                        </tr>
+                      ) : (
+                        applications.slice(0, 4).map((row) => (
+                          <tr key={row.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-3 px-3 font-mono font-bold text-[#0B2E5C]">
+                              {row.id}
+                            </td>
+                            <td className="py-3 px-3 font-medium">
+                              <div>{row.institution}</div>
+                              <div className="text-[10px] text-slate-400 font-mono">{row.aicteId}</div>
+                            </td>
+                            <td className="py-3 px-3 text-slate-600">
+                              {row.state}
+                            </td>
+                            <td className="py-3 px-3">
+                              <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold border ${row.statusColor}`}>
+                                {row.status}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 text-right">
+                              <Link
+                                href={`/officer/${row.caseId}`}
+                                className="inline-flex items-center space-x-1 px-3 py-1 border border-[#0B2E5C] text-[#0B2E5C] hover:bg-[#E8F0FB] text-xs font-bold rounded-[4px] transition-colors"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>Review</span>
+                              </Link>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
 
                 <div className="pt-2 text-[11px] text-slate-500 flex justify-between items-center">
-                  <span>Showing 3 of 48 applications</span>
-                  <span className="font-semibold text-slate-600">SYNTHETIC DATA – Academic Year 2026-27</span>
+                  <span>
+                    Showing {applications.length} of {stats.total_applications} applications
+                  </span>
+                  <span className="font-semibold text-emerald-700">
+                    Live Azure PostgreSQL Data (SSL Enforced)
+                  </span>
                 </div>
               </div>
 
@@ -289,7 +338,7 @@ export default function OfficerDashboardPage() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4">
               <div>
                 <h2 className="text-base font-bold text-[#0B2E5C]">Full Scrutiny Applications Queue</h2>
-                <p className="text-xs text-slate-500 mt-0.5">Filter, search and scrutinize Extension of Approval applications.</p>
+                <p className="text-xs text-slate-500 mt-0.5">Filter, search and scrutinize Extension of Approval applications from Azure Database.</p>
               </div>
 
               {/* Status Filter */}
@@ -300,9 +349,10 @@ export default function OfficerDashboardPage() {
                   onChange={(e) => setFilterStatus(e.target.value)}
                   className="px-2.5 py-1.5 border border-slate-300 rounded text-xs text-slate-800 bg-white"
                 >
-                  <option value="all">All Applications (6)</option>
+                  <option value="all">All Applications ({applications.length})</option>
                   <option value="under_review">Under Review</option>
                   <option value="needs_clarification">Needs Clarification</option>
+                  <option value="submitted">Submitted</option>
                   <option value="verified">Verified</option>
                   <option value="rejected">Rejected</option>
                 </select>
@@ -329,42 +379,59 @@ export default function OfficerDashboardPage() {
                     <th className="py-2.5 px-3">Application ID</th>
                     <th className="py-2.5 px-3">Institution Name</th>
                     <th className="py-2.5 px-3">Category</th>
-                    <th className="py-2.5 px-3">Submitted On</th>
+                    <th className="py-2.5 px-3">State</th>
                     <th className="py-2.5 px-3">Deficiencies</th>
                     <th className="py-2.5 px-3">Status</th>
                     <th className="py-2.5 px-3 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {filteredApps.map((row) => (
-                    <tr key={row.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-3 px-3 font-mono font-bold text-[#0B2E5C]">{row.id}</td>
-                      <td className="py-3 px-3 font-medium">{row.institution}</td>
-                      <td className="py-3 px-3 text-slate-600">{row.category}</td>
-                      <td className="py-3 px-3 text-slate-500 font-mono">{row.submittedOn}</td>
-                      <td className="py-3 px-3">
-                        {row.deficiencies > 0 ? (
-                          <span className="font-bold text-[#B42318]">{row.deficiencies} flagged</span>
-                        ) : (
-                          <span className="text-[#1E7B34] font-medium">None</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold border ${row.statusColor}`}>
-                          {row.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 text-right">
-                        <Link
-                          href={`/officer/${row.caseId}`}
-                          className="inline-flex items-center space-x-1 px-3 py-1 border border-[#0B2E5C] text-[#0B2E5C] hover:bg-[#E8F0FB] text-xs font-bold rounded-[4px] transition-colors"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>Review Case</span>
-                        </Link>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-slate-500 font-mono">
+                        Loading live rows from Azure Database for PostgreSQL...
                       </td>
                     </tr>
-                  ))}
+                  ) : filteredApps.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-slate-500">
+                        No matching applications found.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredApps.map((row) => (
+                      <tr key={row.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3 px-3 font-mono font-bold text-[#0B2E5C]">{row.id}</td>
+                        <td className="py-3 px-3 font-medium">
+                          <div>{row.institution}</div>
+                          <div className="text-[10px] text-slate-400 font-mono">{row.aicteId}</div>
+                        </td>
+                        <td className="py-3 px-3 text-slate-600">{row.category}</td>
+                        <td className="py-3 px-3 text-slate-600">{row.state}</td>
+                        <td className="py-3 px-3">
+                          {row.deficiencies > 0 ? (
+                            <span className="font-bold text-[#B42318]">{row.deficiencies} flagged</span>
+                          ) : (
+                            <span className="text-[#1E7B34] font-medium">Clear</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold border ${row.statusColor}`}>
+                            {row.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <Link
+                            href={`/officer/${row.caseId}`}
+                            className="inline-flex items-center space-x-1 px-3 py-1 border border-[#0B2E5C] text-[#0B2E5C] hover:bg-[#E8F0FB] text-xs font-bold rounded-[4px] transition-colors"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Review Case</span>
+                          </Link>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
