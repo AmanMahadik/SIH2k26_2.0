@@ -113,7 +113,15 @@ export default function LoginPage() {
 
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start relative z-10">
           {/* Left Column: Welcome, Explanations, Advisory Pill */}
-          <div className="lg:col-span-6 xl:col-span-7 space-y-6 pt-4 lg:pt-8 pr-0 lg:pr-6">
+          <div className="lg:col-span-6 xl:col-span-7 space-y-5 pt-3 lg:pt-6 pr-0 lg:pr-6">
+            <div className="inline-block bg-white p-1 rounded-lg border border-slate-200 shadow-xs">
+              <img
+                src="/nirikshai_logo.jpg"
+                alt="NirikshAI Official Logo"
+                className="h-14 sm:h-16 w-auto object-contain rounded"
+              />
+            </div>
+
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#0B2E5C] tracking-tight">
               Welcome to NirikshAI
             </h1>

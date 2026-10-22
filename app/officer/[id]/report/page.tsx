@@ -87,7 +87,14 @@ export default function FormalReportPage() {
         {/* Printable Official Government Letterhead Sheet */}
         <div className="bg-white p-8 sm:p-12 rounded-[6px] border border-[#D0D7E2] shadow-xs print:border-none print:shadow-none print:p-0 space-y-6 text-[#1A1A1A]">
           {/* Header Strip with Ashoka Pillar & AICTE Official Headers */}
-          <div className="text-center space-y-1.5 border-b-2 border-slate-900 pb-5">
+          <div className="text-center space-y-2 border-b-2 border-slate-900 pb-5">
+            <div className="flex justify-center pb-1">
+              <img
+                src="/nirikshai_logo.jpg"
+                alt="NirikshAI Official AICTE Regulation Bureau"
+                className="h-16 sm:h-20 w-auto object-contain"
+              />
+            </div>
             <p className="text-[11px] font-semibold tracking-wider text-slate-600 uppercase">
               Government of India • Ministry of Education
             </p>
