@@ -15,6 +15,8 @@ import {
   UserPlus,
   FileText,
   Database,
+  Lock,
+  UserCheck,
 } from 'lucide-react';
 import { RuleDefinition } from '@/lib/types';
 
@@ -49,6 +51,14 @@ export default function AdminDashboardPage() {
   const [ruleVersion, setRuleVersion] = useState(1);
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
 
+  const userList = [
+    { name: 'Dr. Priya Sharma', role: 'Scrutiny Officer', email: 'officer@demo.ai', dept: 'Western Regional Office', clearance: 'Level 2' },
+    { name: 'Prof. R. Kumar', role: 'Senior Officer', email: 'senior@demo.ai', dept: 'Senior Scrutiny Committee', clearance: 'Level 3' },
+    { name: 'ABC Engineering College', role: 'Institution', email: 'inst@demo.ai', dept: 'Affiliated Technical Campus', clearance: 'Level 1' },
+    { name: 'Admin User', role: 'Administrator', email: 'admin@demo.ai', dept: 'Regulation Bureau HQ', clearance: 'Level 4 (Super)' },
+    { name: 'Auditor User', role: 'Auditor', email: 'auditor@demo.ai', dept: 'Vigilance & Audit Cell', clearance: 'Level 3 (Read-Only)' },
+  ];
+
   const handlePublishNewRule = () => {
     setRuleVersion((v) => v + 1);
     setIsPublishModalOpen(false);
@@ -58,7 +68,9 @@ export default function AdminDashboardPage() {
   return (
     <GovLayout role="admin" activeTab={activeTab} onTabChange={setActiveTab}>
       <div className="space-y-6">
-        {/* Tab 1: Home View (Matches Mockup 4.4) */}
+        {/* ========================================================================= */}
+        {/* TAB 1: HOME (Exact match to Mockup 4.4)                                  */}
+        {/* ========================================================================= */}
         {activeTab === 'home' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             {/* System Overview: 2x2 Grid (7 Cols) */}
@@ -125,7 +137,11 @@ export default function AdminDashboardPage() {
                 <h2 className="text-sm font-bold text-[#0B2E5C]">
                   Recent Activities
                 </h2>
-                <button className="text-xs font-semibold text-[#0B57D0] hover:underline">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('reports')}
+                  className="text-xs font-semibold text-[#0B57D0] hover:underline"
+                >
                   View All &rarr;
                 </button>
               </div>
@@ -175,7 +191,65 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* Tab 2: Config / Rule Manager (Section 4.4) */}
+        {/* ========================================================================= */}
+        {/* TAB 2: USERS MANAGEMENT                                                   */}
+        {/* ========================================================================= */}
+        {activeTab === 'users' && (
+          <div className="bg-white rounded-[6px] border border-[#D0D7E2] p-6 shadow-xs space-y-5">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+              <div>
+                <h2 className="text-base font-bold text-[#0B2E5C]">User Clearance &amp; RBAC Directory</h2>
+                <p className="text-xs text-slate-500 mt-0.5">Manage institutional accounts and officer authorization levels.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab('home')}
+                className="text-xs font-bold text-[#0B57D0] hover:underline"
+              >
+                &larr; Back to Dashboard
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-[#EEF3FA] text-[#0B2E5C] font-bold border-y border-[#D0D7E2]">
+                  <tr>
+                    <th className="py-2.5 px-3">Full Name / College</th>
+                    <th className="py-2.5 px-3">Role</th>
+                    <th className="py-2.5 px-3">Email Address</th>
+                    <th className="py-2.5 px-3">Department / Unit</th>
+                    <th className="py-2.5 px-3">Clearance Level</th>
+                    <th className="py-2.5 px-3 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-slate-700">
+                  {userList.map((u, i) => (
+                    <tr key={i} className="hover:bg-slate-50">
+                      <td className="py-3 px-3 font-bold text-slate-800">{u.name}</td>
+                      <td className="py-3 px-3 font-semibold text-[#0B2E5C]">{u.role}</td>
+                      <td className="py-3 px-3 font-mono text-slate-600">{u.email}</td>
+                      <td className="py-3 px-3 text-slate-600">{u.dept}</td>
+                      <td className="py-3 px-3">
+                        <span className="bg-slate-100 px-2 py-0.5 rounded font-mono text-[11px] text-slate-700 border border-slate-200">
+                          {u.clearance}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 text-right">
+                        <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                          Active
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 3: CONFIG / RULE MANAGER (Section 4.4)                                */}
+        {/* ========================================================================= */}
         {activeTab === 'config' && (
           <div className="bg-white rounded-[6px] border border-[#D0D7E2] p-6 shadow-xs space-y-5">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4">
@@ -253,6 +327,46 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 4: REPORTS                                                            */}
+        {/* ========================================================================= */}
+        {activeTab === 'reports' && (
+          <div className="bg-white rounded-[6px] border border-[#D0D7E2] p-6 shadow-xs space-y-5">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+              <div>
+                <h2 className="text-base font-bold text-[#0B2E5C]">System Audit &amp; Infrastructure Logs</h2>
+                <p className="text-xs text-slate-500 mt-0.5">Real-time status of Azure Central India services and application telemetry.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab('home')}
+                className="text-xs font-bold text-[#0B57D0] hover:underline"
+              >
+                &larr; Back to Dashboard
+              </button>
+            </div>
+
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded font-mono text-xs space-y-2 text-slate-700">
+              <div className="flex justify-between border-b border-slate-200 pb-1">
+                <span>Database Host: aicte-nirikshai-db.postgres.database.azure.com</span>
+                <span className="text-emerald-700 font-bold">ONLINE</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-200 pb-1">
+                <span>SSL TLS 1.3 Encryption:</span>
+                <span className="text-emerald-700 font-bold">ENFORCED</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-200 pb-1">
+                <span>Microsoft Entra ID (Azure AD) Sync:</span>
+                <span className="text-emerald-700 font-bold">ACTIVE</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Cryptographic Audit Blocks:</span>
+                <span className="text-blue-700 font-bold">SEALED (SHA-256)</span>
+              </div>
+            </div>
           </div>
         )}
       </div>
