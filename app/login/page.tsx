@@ -296,9 +296,9 @@ export default function LoginPage() {
 
                   {/* Dynamic Government Captcha Component */}
                   <GovCaptcha
-                    onCodeChange={(code) => setActiveCaptchaCode(code)}
+                    onCodeChange={setActiveCaptchaCode}
                     inputVal={captchaInput}
-                    onInputChange={(val) => setCaptchaInput(val)}
+                    onInputChange={setCaptchaInput}
                     refreshTrigger={captchaRefreshTrigger}
                   />
 

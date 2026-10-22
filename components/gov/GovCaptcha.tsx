@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { RefreshCw } from 'lucide-react';
 
 interface GovCaptchaProps {
@@ -31,6 +31,14 @@ export default function GovCaptcha({
   const [offsets, setOffsets] = useState<number[]>([0, 0, 0, 0]);
   const [isSpinning, setIsSpinning] = useState(false);
 
+  // Keep a stable ref to onCodeChange so it never triggers re-renders or infinite loops
+  const onCodeChangeRef = useRef(onCodeChange);
+  useEffect(() => {
+    onCodeChangeRef.current = onCodeChange;
+  }, [onCodeChange]);
+
+  const prevTriggerRef = useRef(refreshTrigger);
+
   const refreshCaptcha = useCallback(() => {
     const newCode = generateRandomCode();
     setCaptchaCode(newCode);
@@ -47,16 +55,26 @@ export default function GovCaptcha({
       Math.floor((Math.random() - 0.5) * 6),
     ]);
     setIsSpinning(true);
-    setTimeout(() => setIsSpinning(false), 500);
-    onCodeChange(newCode);
-  }, [onCodeChange]);
+    setTimeout(() => setIsSpinning(false), 400);
 
+    if (onCodeChangeRef.current) {
+      onCodeChangeRef.current(newCode);
+    }
+  }, []);
+
+  // Initial code generation on mount (runs only once)
   useEffect(() => {
     refreshCaptcha();
   }, [refreshCaptcha]);
 
+  // Triggered refresh from parent (e.g. on role switch or failed attempt)
   useEffect(() => {
-    if (refreshTrigger !== undefined && refreshTrigger > 0) {
+    if (
+      refreshTrigger !== undefined &&
+      refreshTrigger > 0 &&
+      refreshTrigger !== prevTriggerRef.current
+    ) {
+      prevTriggerRef.current = refreshTrigger;
       refreshCaptcha();
     }
   }, [refreshTrigger, refreshCaptcha]);
