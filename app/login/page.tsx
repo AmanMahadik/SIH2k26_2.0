@@ -327,6 +327,17 @@ export default function LoginPage() {
                       Register your institution (AICTE ID)
                     </a>
                   </div>
+
+                  {/* Microsoft Entra ID (Azure AD) Security Trust Badge */}
+                  <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-500">
+                    <span className="flex items-center space-x-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span className="font-medium text-slate-700">Microsoft Entra ID (Azure AD)</span>
+                    </span>
+                    <span className="font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-[10px]">
+                      Azure Central India
+                    </span>
+                  </div>
                 </form>
 
                 {/* Demo Accounts Yellow Box */}

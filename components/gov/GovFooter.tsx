@@ -15,9 +15,11 @@ export default function GovFooter() {
           Check early. Prove everything. Humans decide.
         </div>
 
-        {/* Right: SIH Prototype Notice */}
-        <div className="text-slate-400 font-medium">
-          PROTOTYPE – Built for SIH 2026 (PS 26261)
+        {/* Right: SIH Prototype Notice & Azure Sovereign Cloud */}
+        <div className="text-slate-400 font-medium flex items-center justify-center md:justify-end space-x-2">
+          <span>PROTOTYPE – Built for SIH 2026 (PS 26261)</span>
+          <span className="text-slate-600">•</span>
+          <span className="text-cyan-400 font-semibold">Azure Central India</span>
         </div>
       </div>
     </footer>
