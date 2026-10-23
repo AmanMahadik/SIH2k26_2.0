@@ -20,6 +20,9 @@ import {
   RefreshCw,
   Building2,
   X,
+  Search,
+  Sparkles,
+  Check,
 } from 'lucide-react';
 import { RuleDefinition } from '@/lib/types';
 
@@ -85,6 +88,76 @@ export default function AdminDashboardPage() {
     university: '',
     approved_intake: '360',
   });
+  const [instLookupStatus, setInstLookupStatus] = useState<'idle' | 'loading' | 'found' | 'not_found'>('idle');
+  const [instLookupMeta, setInstLookupMeta] = useState<{ application_no?: string; source?: string } | null>(null);
+  const [nameSuggestions, setNameSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const handleAicteIdLookup = async (id: string) => {
+    setInstForm((prev) => ({ ...prev, aicte_id: id }));
+    const trimmed = id.trim();
+    if (trimmed.length < 3) {
+      setInstLookupStatus('idle');
+      setInstLookupMeta(null);
+      return;
+    }
+    setInstLookupStatus('loading');
+    try {
+      const res = await fetch(`/api/institutions/lookup?id=${encodeURIComponent(trimmed)}`);
+      const result = await res.json();
+      if (result.success && result.found && result.data) {
+        setInstForm((prev) => ({
+          ...prev,
+          aicte_id: result.data.aicte_id || id,
+          name: result.data.name || prev.name,
+          state: result.data.state || prev.state,
+          university: result.data.university || prev.university,
+          approved_intake: String(result.data.approved_intake || prev.approved_intake),
+        }));
+        setInstLookupStatus('found');
+        setInstLookupMeta({
+          application_no: result.data.application_no,
+          source: result.source,
+        });
+      } else {
+        setInstLookupStatus('not_found');
+        setInstLookupMeta(null);
+      }
+    } catch (e) {
+      setInstLookupStatus('not_found');
+    }
+  };
+
+  const handleNameSearch = async (val: string) => {
+    setInstForm((prev) => ({ ...prev, name: val }));
+    if (val.trim().length >= 2) {
+      try {
+        const res = await fetch(`/api/institutions/lookup?q=${encodeURIComponent(val.trim())}&limit=6`);
+        const result = await res.json();
+        if (result.success && Array.isArray(result.data)) {
+          setNameSuggestions(result.data);
+          setShowSuggestions(true);
+        }
+      } catch (e) {}
+    } else {
+      setNameSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSelectInstitutionPreset = (inst: { permanent_id: string; name: string; state: string; university: string; application_no?: string }) => {
+    setInstForm((prev) => ({
+      ...prev,
+      aicte_id: inst.permanent_id,
+      name: inst.name,
+      state: inst.state,
+      university: inst.university,
+      approved_intake: '360',
+    }));
+    setInstLookupStatus('found');
+    setInstLookupMeta({ application_no: inst.application_no, source: 'AICTE Master Registry (APH 2024-27)' });
+    setShowSuggestions(false);
+  };
   const [officerForm, setOfficerForm] = useState({
     name: '',
     email: '',
@@ -673,38 +746,128 @@ export default function AdminDashboardPage() {
                 </button>
               </div>
 
-              <form onSubmit={handleAddInstitution} className="space-y-3.5 text-xs">
-                <div>
+              <form onSubmit={handleAddInstitution} className="space-y-4 text-xs">
+                {/* 1. AICTE Permanent ID with Instant Auto-Fetch */}
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="font-bold text-slate-800 flex items-center space-x-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                      <span>AICTE Permanent ID * (Auto-Fetch Enabled)</span>
+                    </label>
+                    {instLookupStatus === 'loading' && (
+                      <span className="text-[10px] text-blue-600 font-semibold flex items-center space-x-1">
+                        <RefreshCw className="w-3 h-3 animate-spin" />
+                        <span>Searching 4,788 colleges...</span>
+                      </span>
+                    )}
+                    {instLookupStatus === 'found' && (
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded font-bold flex items-center space-x-1">
+                        <Check className="w-3 h-3" />
+                        <span>Matched AICTE Master Registry</span>
+                      </span>
+                    )}
+                    {instLookupStatus === 'not_found' && (
+                      <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded font-medium">
+                        Manual Entry Allowed
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required
+                      placeholder="Enter Permanent ID (e.g. 1-5592509, 1-10575231, 1-6248771)"
+                      value={instForm.aicte_id}
+                      onChange={(e) => handleAicteIdLookup(e.target.value)}
+                      className="w-full px-3 py-2 border-2 border-blue-400 focus:border-blue-600 rounded text-slate-900 bg-white font-mono text-xs font-semibold focus:outline-hidden"
+                    />
+                  </div>
+
+                  {/* Quick Preset Selector Buttons */}
+                  <div className="space-y-1 pt-1">
+                    <span className="text-[10px] text-slate-500 font-semibold block">
+                      Quick Samples from Uploaded Dataset (Click to test auto-fetch):
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { permanent_id: '1-5592509', name: "SCTR'S PUNE INSTITUTE OF COMPUTER TECHNOLOGY", state: 'Maharashtra', university: 'Savitribai Phule Pune University', application_no: '1-3330294993' },
+                        { permanent_id: '1-6248771', name: 'ABES ENGINEERING COLLEGE', state: 'Uttar Pradesh', university: 'Dr. A.P.J. Abdul Kalam Technical University (AKTU)', application_no: '1-3328101885' },
+                        { permanent_id: '1-8141561', name: 'ACHARYA INSTITUTE OF TECHNOLOGY', state: 'Karnataka', university: 'Visvesvaraya Technological University (VTU)', application_no: '1-3327124175' },
+                        { permanent_id: '1-10575231', name: 'A & M INSTITUTE OF COMPUTER & TECHNOLOGY', state: 'Punjab', university: 'I.K. Gujral Punjab Technical University (PTU)', application_no: '1-3326916946' },
+                        { permanent_id: '1-14068819', name: 'VIDYALANKAR INSTITUTE OF TECHNOLOGY', state: 'Maharashtra', university: 'University of Mumbai', application_no: '1-3321478401' },
+                        { permanent_id: '1-2609821', name: 'GMR INSTITUTE OF TECHNOLOGY', state: 'Andhra Pradesh', university: 'Jawaharlal Nehru Technological University, Kakinada (JNTUK)', application_no: '1-3325766864' },
+                      ].map((item, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleSelectInstitutionPreset(item)}
+                          className={`text-[10px] px-2 py-0.5 rounded border transition-all cursor-pointer font-mono ${
+                            instForm.aicte_id === item.permanent_id
+                              ? 'bg-blue-600 text-white border-blue-700 shadow-xs'
+                              : 'bg-white hover:bg-blue-50 text-slate-700 border-slate-300'
+                          }`}
+                        >
+                          {item.permanent_id}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {instLookupStatus === 'found' && instLookupMeta && (
+                    <div className="p-2 bg-emerald-50/80 border border-emerald-200 rounded text-[11px] text-emerald-900 space-y-0.5">
+                      <div className="font-bold">✓ Master Registry Verified:</div>
+                      <div className="text-emerald-800 text-[10px]">
+                        Application No: <span className="font-mono font-bold">{instLookupMeta.application_no}</span> | Source: {instLookupMeta.source}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Institution Full Legal Name with Autocomplete */}
+                <div className="relative">
                   <label className="block font-bold text-slate-700 mb-1">
-                    Institution Full Legal Name *
+                    Institution Full Legal Name * (Auto-Populated / Searchable)
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Veermata Jijabai Technological Institute"
+                    placeholder="e.g. Pune Institute of Computer Technology"
                     value={instForm.name}
-                    onChange={(e) => setInstForm({ ...instForm, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded text-slate-800 bg-white"
+                    onChange={(e) => handleNameSearch(e.target.value)}
+                    onFocus={() => { if (nameSuggestions.length > 0) setShowSuggestions(true); }}
+                    className="w-full px-3 py-2 border border-slate-300 rounded text-slate-800 bg-white font-medium"
                   />
+
+                  {/* Autocomplete Suggestions List */}
+                  {showSuggestions && nameSuggestions.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-300 rounded-md shadow-xl z-20 max-h-48 overflow-y-auto">
+                      <div className="px-3 py-1 bg-slate-100 text-[10px] font-bold text-slate-500 uppercase">
+                        Matching AICTE Dataset ({nameSuggestions.length} found):
+                      </div>
+                      {nameSuggestions.map((item, i) => (
+                        <div
+                          key={i}
+                          onClick={() => handleSelectInstitutionPreset(item)}
+                          className="px-3 py-2 hover:bg-blue-50 border-b border-slate-100 cursor-pointer text-xs"
+                        >
+                          <div className="font-bold text-slate-900">{item.name}</div>
+                          <div className="text-[10px] text-slate-500 flex items-center space-x-2 font-mono">
+                            <span>ID: {item.permanent_id}</span>
+                            <span>•</span>
+                            <span>{item.state}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
+                {/* 3. State & University */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">
-                      AICTE Permanent ID *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. 1-5098129031"
-                      value={instForm.aicte_id}
-                      onChange={(e) => setInstForm({ ...instForm, aicte_id: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-300 rounded text-slate-800 bg-white font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      State / UT *
+                      State / UT * (Auto-Populated)
                     </label>
                     <input
                       type="text"
@@ -715,33 +878,31 @@ export default function AdminDashboardPage() {
                       className="w-full px-3 py-2 border border-slate-300 rounded text-slate-800 bg-white"
                     />
                   </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Affiliating University
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. University of Mumbai"
-                      value={instForm.university}
-                      onChange={(e) => setInstForm({ ...instForm, university: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-300 rounded text-slate-800 bg-white"
-                    />
-                  </div>
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">
                       Sanctioned Intake Quota
                     </label>
                     <input
                       type="number"
-                      placeholder="e.g. 420"
+                      placeholder="e.g. 360"
                       value={instForm.approved_intake}
                       onChange={(e) => setInstForm({ ...instForm, approved_intake: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-300 rounded text-slate-800 bg-white"
+                      className="w-full px-3 py-2 border border-slate-300 rounded text-slate-800 bg-white font-mono"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Affiliating University (Auto-Populated)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Savitribai Phule Pune University"
+                    value={instForm.university}
+                    onChange={(e) => setInstForm({ ...instForm, university: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded text-slate-800 bg-white"
+                  />
                 </div>
 
                 <p className="text-[11px] text-slate-500 pt-1">
@@ -751,7 +912,11 @@ export default function AdminDashboardPage() {
                 <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
                   <button
                     type="button"
-                    onClick={() => setIsAddInstModalOpen(false)}
+                    onClick={() => {
+                      setIsAddInstModalOpen(false);
+                      setShowSuggestions(false);
+                      setInstLookupStatus('idle');
+                    }}
                     className="px-3.5 py-1.5 border border-slate-300 rounded font-semibold text-slate-600 hover:bg-slate-100"
                   >
                     Cancel

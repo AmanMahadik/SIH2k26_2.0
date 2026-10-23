@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import crypto from 'crypto';
+import { lookupAicteInstitution } from '@/lib/aicte-directory';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +39,17 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, aicte_id, state, university, approved_intake } = body;
+    let { name, aicte_id, state, university, approved_intake } = body;
+
+    // Auto-fetch from AICTE Master Registry if name or state missing
+    if (aicte_id) {
+      const master = lookupAicteInstitution(aicte_id);
+      if (master) {
+        if (!name) name = master.name;
+        if (!state) state = master.state;
+        if (!university) university = master.university;
+      }
+    }
 
     if (!name || !aicte_id || !state) {
       return NextResponse.json(

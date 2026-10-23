@@ -22,6 +22,8 @@ import {
   Download,
   AlertTriangle,
   ShieldAlert,
+  Sparkles,
+  RefreshCw,
 } from 'lucide-react';
 
 export default function InstitutionDashboardPage() {
@@ -47,6 +49,38 @@ export default function InstitutionDashboardPage() {
   });
 
   const [liveAlerts, setLiveAlerts] = useState<any[]>([]);
+  const [profileLookupStatus, setProfileLookupStatus] = useState<'idle' | 'loading' | 'found' | 'not_found'>('idle');
+  const [profileLookupMessage, setProfileLookupMessage] = useState<string | null>(null);
+
+  const handleProfileAicteLookup = async (newId: string) => {
+    setProfileData((prev) => ({ ...prev, aicteId: newId }));
+    const trimmed = newId.trim();
+    if (trimmed.length < 3) {
+      setProfileLookupStatus('idle');
+      setProfileLookupMessage(null);
+      return;
+    }
+    setProfileLookupStatus('loading');
+    try {
+      const res = await fetch(`/api/institutions/lookup?id=${encodeURIComponent(trimmed)}`);
+      const result = await res.json();
+      if (result.success && result.found && result.data) {
+        setProfileData((prev) => ({
+          ...prev,
+          aicteId: result.data.aicte_id || newId,
+          name: result.data.name || prev.name,
+          affiliation: result.data.university || prev.affiliation,
+        }));
+        setProfileLookupStatus('found');
+        setProfileLookupMessage(`Found: ${result.data.name} (${result.data.state})`);
+      } else {
+        setProfileLookupStatus('not_found');
+        setProfileLookupMessage(null);
+      }
+    } catch (e) {
+      setProfileLookupStatus('not_found');
+    }
+  };
 
   useEffect(() => {
     fetch('/api/institutions')
@@ -615,8 +649,44 @@ export default function InstitutionDashboardPage() {
             </div>
 
             <form onSubmit={handleSaveProfile} className="p-5 space-y-4 text-xs">
+              {/* AICTE Permanent ID with Instant Auto-Fetch */}
+              <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <label className="font-bold text-slate-800 flex items-center space-x-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                    <span>AICTE Permanent ID (Auto-Fetch Enabled)</span>
+                  </label>
+                  {profileLookupStatus === 'loading' && (
+                    <span className="text-[10px] text-blue-600 flex items-center space-x-1 font-semibold">
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                      <span>Searching...</span>
+                    </span>
+                  )}
+                  {profileLookupStatus === 'found' && (
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.2 rounded font-bold flex items-center space-x-1">
+                      <Check className="w-3 h-3" />
+                      <span>Verified</span>
+                    </span>
+                  )}
+                </div>
+
+                <input
+                  type="text"
+                  value={profileData.aicteId}
+                  onChange={(e) => handleProfileAicteLookup(e.target.value)}
+                  placeholder="e.g. 1-5592509"
+                  className="w-full px-3 py-2 border-2 border-blue-400 focus:border-blue-600 rounded text-slate-900 bg-white font-mono font-semibold"
+                />
+
+                {profileLookupMessage && (
+                  <div className="text-[10px] text-emerald-800 font-semibold bg-emerald-50 p-1.5 rounded border border-emerald-200">
+                    ✓ {profileLookupMessage}
+                  </div>
+                )}
+              </div>
+
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Institution Legal Name</label>
+                <label className="font-bold text-slate-700 block mb-1">Institution Legal Name (Auto-Populated)</label>
                 <input
                   type="text"
                   value={profileData.name}
@@ -628,15 +698,6 @@ export default function InstitutionDashboardPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">AICTE Permanent ID</label>
-                  <input
-                    type="text"
-                    value={profileData.aicteId}
-                    disabled
-                    className="w-full px-3 py-2 border border-slate-200 bg-slate-100 rounded text-slate-500 font-mono"
-                  />
-                </div>
-                <div>
                   <label className="font-bold text-slate-700 block mb-1">Established Year</label>
                   <input
                     type="text"
@@ -645,17 +706,16 @@ export default function InstitutionDashboardPage() {
                     className="w-full px-3 py-2 border border-slate-300 rounded text-slate-800"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Affiliating University</label>
-                <input
-                  type="text"
-                  value={profileData.affiliation}
-                  onChange={(e) => setProfileData({ ...profileData, affiliation: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded text-slate-800"
-                  required
-                />
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Affiliating University (Auto-Populated)</label>
+                  <input
+                    type="text"
+                    value={profileData.affiliation}
+                    onChange={(e) => setProfileData({ ...profileData, affiliation: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded text-slate-800"
+                    required
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
