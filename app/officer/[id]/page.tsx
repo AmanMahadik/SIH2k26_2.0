@@ -32,6 +32,7 @@ export default function OfficerCaseScrutinyPage() {
   const [apps, setApps] = useState<Application[]>([]);
   const [selectedDocId, setSelectedDocId] = useState<string>('');
   const [activeHighlightBbox, setActiveHighlightBbox] = useState<any>(null);
+  const [activeHighlightField, setActiveHighlightField] = useState<string | null>(null);
   const [decisionNotes, setDecisionNotes] = useState<string>('');
   const [isActionLoading, setIsActionLoading] = useState<boolean>(false);
 
@@ -48,6 +49,17 @@ export default function OfficerCaseScrutinyPage() {
   if (!app) return null;
 
   const currentDoc = app.documents?.find(d => d.id === selectedDocId) || app.documents?.[0];
+
+  const isFieldActive = (fieldKey: string) => {
+    if (activeHighlightField === fieldKey) return true;
+    if (activeHighlightBbox && currentDoc?.extracted_fields) {
+      const f = currentDoc.extracted_fields.find(
+        fld => fld.field_key === fieldKey && fld.bbox && fld.bbox.x === activeHighlightBbox.x
+      );
+      if (f) return true;
+    }
+    return false;
+  };
 
   const handleReviewFinding = (findingId: string, decision: 'confirmed' | 'dismissed') => {
     setIsActionLoading(true);
@@ -159,6 +171,27 @@ export default function OfficerCaseScrutinyPage() {
       }
     }
     if (finding.evidence.bboxes && finding.evidence.bboxes.length > 0) {
+      let targetField = finding.evidence.field_key || '';
+      if (!targetField) {
+        if (finding.rule_id?.includes('INTAKE') || finding.message?.toLowerCase().includes('intake')) {
+          targetField = 'approved_intake';
+        } else if (
+          finding.rule_id?.includes('NAME') ||
+          finding.rule_id?.includes('TITLE') ||
+          finding.message?.toLowerCase().includes('name') ||
+          finding.message?.toLowerCase().includes('title')
+        ) {
+          targetField = 'institution_name';
+        } else if (
+          finding.rule_id?.includes('NOC') ||
+          finding.rule_id?.includes('EXP') ||
+          finding.message?.toLowerCase().includes('expired') ||
+          finding.message?.toLowerCase().includes('valid')
+        ) {
+          targetField = 'valid_to';
+        }
+      }
+      setActiveHighlightField(targetField);
       setActiveHighlightBbox(finding.evidence.bboxes[0]);
     }
   };
@@ -235,6 +268,7 @@ export default function OfficerCaseScrutinyPage() {
                 onClick={() => {
                   setSelectedDocId(d.id);
                   setActiveHighlightBbox(null);
+                  setActiveHighlightField(null);
                 }}
                 className={`text-xs font-semibold px-3 py-1.5 rounded-lg border whitespace-nowrap transition-all ${
                   selectedDocId === d.id
@@ -281,83 +315,194 @@ export default function OfficerCaseScrutinyPage() {
                 </div>
               </div>
 
-              {/* Document Body Simulation */}
-              <div className="space-y-3 font-sans text-[11px]">
-                <p>
-                  <strong>Application Reference:</strong> {app.id.toUpperCase()}-REG
-                </p>
-                <p>
-                  <strong>Institution Title:</strong>{' '}
-                  <span className="bg-blue-50 px-1 py-0.5 border border-blue-200 rounded font-semibold text-blue-900">
-                    {currentDoc?.extracted_fields?.find(f => f.field_key === 'institution_name')?.value || app.institution?.name}
-                  </span>
-                </p>
-                <p>
-                  <strong>AICTE National Permanent ID:</strong> {app.institution?.aicte_id}
-                </p>
-                {currentDoc?.extracted_fields?.some(f => f.field_key === 'approved_intake') && (
-                  <p>
-                    <strong>Approved Sanctioned Intake (Claimed):</strong>{' '}
-                    <span className="font-mono font-bold text-slate-900 bg-amber-50 px-1.5 py-0.5 border border-amber-300 rounded">
-                      {currentDoc.extracted_fields.find(f => f.field_key === 'approved_intake')?.value} Seats
-                    </span>
-                  </p>
-                )}
-                {currentDoc?.extracted_fields?.some(f => f.field_key === 'valid_to') && (
-                  <p>
-                    <strong>Certificate Validity Till:</strong>{' '}
-                    <span className="font-mono font-bold text-slate-900 bg-amber-50 px-1.5 py-0.5 border border-amber-300 rounded">
-                      {currentDoc.extracted_fields.find(f => f.field_key === 'valid_to')?.value}
-                    </span>
-                  </p>
-                )}
-                <p className="text-slate-500 text-[10px] pt-4">
-                  Note: This document has been read by NirikshAI Document AI OCR engine. All fields, timestamps, and cryptographic digital signatures have been extracted for regulatory verification.
-                </p>
-              </div>
+              {/* Document Body with Direct-Anchored Precision OCR Bounding Boxes */}
+              <div className="space-y-3.5 font-sans text-[11px] pt-1">
+                {/* Application Reference */}
+                <div className="flex items-center space-x-2">
+                  <span className="font-bold text-slate-700 min-w-[170px]">Application Reference:</span>
+                  <span className="font-mono text-slate-800 font-semibold">{app.id.toUpperCase()}-REG</span>
+                </div>
 
-              {/* Bounding Box Highlights Overlay Layer */}
-              {currentDoc?.extracted_fields?.map((field, idx) => {
-                const isSelected = activeHighlightBbox && activeHighlightBbox.x === field.bbox?.x;
-                if (!field.bbox) return null;
-                return (
+                {/* Institution Title with Pinpoint OCR Bounding Box */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-bold text-slate-700 min-w-[170px]">Institution Title:</span>
                   <div
-                    key={idx}
-                    style={{
-                      left: `${field.bbox.x * 100}%`,
-                      top: `${field.bbox.y * 100}%`,
-                      width: `${field.bbox.w * 100}%`,
-                      height: `${field.bbox.h * 100}%`,
-                    }}
-                    className={`absolute rounded transition-all pointer-events-none flex items-start justify-end p-0.5 ${
-                      isSelected
-                        ? 'border-2 border-rose-600 bg-rose-500/25 ring-4 ring-rose-400/50 animate-pulse'
-                        : 'border border-blue-500 bg-blue-500/10'
+                    onClick={() => setActiveHighlightField(activeHighlightField === 'institution_name' ? null : 'institution_name')}
+                    title="OCR Bounding Box: institution_name (Click to toggle)"
+                    className={`relative inline-flex items-center rounded-md transition-all duration-300 p-1 px-2.5 cursor-pointer select-text ${
+                      isFieldActive('institution_name')
+                        ? 'border-2 border-rose-600 bg-rose-500/20 ring-4 ring-rose-400/50 shadow-md animate-pulse'
+                        : 'border-2 border-blue-500 bg-blue-500/10 hover:bg-blue-500/20'
                     }`}
                   >
-                    <span className="text-[9px] font-bold bg-blue-900 text-white px-1 rounded shadow-sm opacity-90">
-                      {field.field_key}
+                    <span className="font-bold text-slate-900 text-xs">
+                      {currentDoc?.extracted_fields?.find(f => f.field_key === 'institution_name')?.value || app.institution?.name}
+                    </span>
+                    <span className={`ml-2 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs tracking-wider uppercase ${
+                      isFieldActive('institution_name') ? 'bg-rose-600 text-white' : 'bg-blue-900 text-white'
+                    }`}>
+                      institution_name
                     </span>
                   </div>
-                );
-              })}
+                </div>
+
+                {/* AICTE National Permanent ID */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-bold text-slate-700 min-w-[170px]">AICTE Permanent ID:</span>
+                  {currentDoc?.extracted_fields?.some(f => f.field_key === 'aicte_id') ? (
+                    <div
+                      onClick={() => setActiveHighlightField(activeHighlightField === 'aicte_id' ? null : 'aicte_id')}
+                      title="OCR Bounding Box: aicte_id (Click to toggle)"
+                      className={`relative inline-flex items-center rounded-md transition-all duration-300 p-1 px-2.5 cursor-pointer select-text ${
+                        isFieldActive('aicte_id')
+                          ? 'border-2 border-rose-600 bg-rose-500/20 ring-4 ring-rose-400/50 shadow-md animate-pulse'
+                          : 'border-2 border-blue-500 bg-blue-500/10 hover:bg-blue-500/20'
+                      }`}
+                    >
+                      <span className="font-mono font-bold text-slate-900 text-xs">{app.institution?.aicte_id}</span>
+                      <span className={`ml-2 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs tracking-wider uppercase ${
+                        isFieldActive('aicte_id') ? 'bg-rose-600 text-white' : 'bg-blue-900 text-white'
+                      }`}>
+                        aicte_id
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="font-mono text-slate-800 font-semibold">{app.institution?.aicte_id}</span>
+                  )}
+                </div>
+
+                {/* Approved Sanctioned Intake with Pinpoint OCR Bounding Box */}
+                {currentDoc?.extracted_fields?.some(f => f.field_key === 'approved_intake') && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-bold text-slate-700 min-w-[170px]">Approved Intake (Claimed):</span>
+                    <div
+                      onClick={() => setActiveHighlightField(activeHighlightField === 'approved_intake' ? null : 'approved_intake')}
+                      title="OCR Bounding Box: approved_intake (Click to toggle)"
+                      className={`relative inline-flex items-center rounded-md transition-all duration-300 p-1 px-2.5 cursor-pointer select-text ${
+                        isFieldActive('approved_intake')
+                          ? 'border-2 border-rose-600 bg-rose-500/20 ring-4 ring-rose-400/50 shadow-md animate-pulse'
+                          : 'border-2 border-blue-500 bg-blue-500/10 hover:bg-blue-500/20'
+                      }`}
+                    >
+                      <span className="font-mono font-bold text-slate-900 text-xs">
+                        {currentDoc.extracted_fields.find(f => f.field_key === 'approved_intake')?.value} Seats
+                      </span>
+                      <span className={`ml-2 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs tracking-wider uppercase ${
+                        isFieldActive('approved_intake') ? 'bg-rose-600 text-white' : 'bg-blue-900 text-white'
+                      }`}>
+                        approved_intake
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Certificate Validity Till */}
+                {currentDoc?.extracted_fields?.some(f => f.field_key === 'valid_to') && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-bold text-slate-700 min-w-[170px]">Certificate Validity Till:</span>
+                    <div
+                      onClick={() => setActiveHighlightField(activeHighlightField === 'valid_to' ? null : 'valid_to')}
+                      title="OCR Bounding Box: valid_to (Click to toggle)"
+                      className={`relative inline-flex items-center rounded-md transition-all duration-300 p-1 px-2.5 cursor-pointer select-text ${
+                        isFieldActive('valid_to')
+                          ? 'border-2 border-rose-600 bg-rose-500/20 ring-4 ring-rose-400/50 shadow-md animate-pulse'
+                          : 'border-2 border-blue-500 bg-blue-500/10 hover:bg-blue-500/20'
+                      }`}
+                    >
+                      <span className="font-mono font-bold text-slate-900 text-xs">
+                        {currentDoc.extracted_fields.find(f => f.field_key === 'valid_to')?.value}
+                      </span>
+                      <span className={`ml-2 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs tracking-wider uppercase ${
+                        isFieldActive('valid_to') ? 'bg-rose-600 text-white' : 'bg-blue-900 text-white'
+                      }`}>
+                        valid_to
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Execution Date */}
+                {currentDoc?.extracted_fields?.some(f => f.field_key === 'execution_date') && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-bold text-slate-700 min-w-[170px]">Execution Date:</span>
+                    <div
+                      onClick={() => setActiveHighlightField(activeHighlightField === 'execution_date' ? null : 'execution_date')}
+                      title="OCR Bounding Box: execution_date (Click to toggle)"
+                      className={`relative inline-flex items-center rounded-md transition-all duration-300 p-1 px-2.5 cursor-pointer select-text ${
+                        isFieldActive('execution_date')
+                          ? 'border-2 border-rose-600 bg-rose-500/20 ring-4 ring-rose-400/50 shadow-md animate-pulse'
+                          : 'border-2 border-blue-500 bg-blue-500/10 hover:bg-blue-500/20'
+                      }`}
+                    >
+                      <span className="font-mono font-bold text-slate-900 text-xs">
+                        {currentDoc.extracted_fields.find(f => f.field_key === 'execution_date')?.value}
+                      </span>
+                      <span className={`ml-2 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs tracking-wider uppercase ${
+                        isFieldActive('execution_date') ? 'bg-rose-600 text-white' : 'bg-blue-900 text-white'
+                      }`}>
+                        execution_date
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Carpet Area */}
+                {currentDoc?.extracted_fields?.some(f => f.field_key === 'carpet_area_sqm') && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-bold text-slate-700 min-w-[170px]">Built-up Carpet Area:</span>
+                    <div
+                      onClick={() => setActiveHighlightField(activeHighlightField === 'carpet_area_sqm' ? null : 'carpet_area_sqm')}
+                      title="OCR Bounding Box: carpet_area_sqm (Click to toggle)"
+                      className={`relative inline-flex items-center rounded-md transition-all duration-300 p-1 px-2.5 cursor-pointer select-text ${
+                        isFieldActive('carpet_area_sqm')
+                          ? 'border-2 border-rose-600 bg-rose-500/20 ring-4 ring-rose-400/50 shadow-md animate-pulse'
+                          : 'border-2 border-blue-500 bg-blue-500/10 hover:bg-blue-500/20'
+                      }`}
+                    >
+                      <span className="font-mono font-bold text-slate-900 text-xs">
+                        {currentDoc.extracted_fields.find(f => f.field_key === 'carpet_area_sqm')?.value} Sq. Metres
+                      </span>
+                      <span className={`ml-2 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs tracking-wider uppercase ${
+                        isFieldActive('carpet_area_sqm') ? 'bg-rose-600 text-white' : 'bg-blue-900 text-white'
+                      }`}>
+                        carpet_area_sqm
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-slate-500 text-[10px] pt-3 border-t border-slate-100">
+                  Note: This document has been read by NirikshAI Document AI OCR engine. All fields, timestamps, and cryptographic digital signatures have been extracted for regulatory verification. Click any field or &ldquo;Locate Evidence Box&rdquo; to highlight findings.
+                </p>
+              </div>
             </div>
 
             {/* Extracted Fields Metadata Strip */}
             <div className="bg-slate-800/90 rounded p-2.5 text-[11px] text-slate-300 space-y-1">
-              <span className="font-bold text-amber-400 uppercase text-[10px]">Extracted OCR Key-Value Tuples:</span>
+              <span className="font-bold text-amber-400 uppercase text-[10px]">Extracted OCR Key-Value Tuples (Click to Locate):</span>
               <div className="flex flex-wrap gap-2 pt-1 font-mono text-[10px]">
                 {currentDoc?.extracted_fields?.map((f, i) => (
-                  <span key={i} className="bg-slate-700/80 px-2 py-0.5 rounded border border-slate-600">
-                    <span className="text-slate-400">{f.field_key}:</span> <span className="text-white font-semibold">{f.value}</span> ({Math.round(f.confidence * 100)}%)
-                  </span>
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setActiveHighlightField(activeHighlightField === f.field_key ? null : f.field_key)}
+                    className={`px-2 py-0.5 rounded border transition-all text-[10px] flex items-center space-x-1 cursor-pointer ${
+                      isFieldActive(f.field_key)
+                        ? 'bg-rose-600 text-white border-rose-400 shadow-sm'
+                        : 'bg-slate-700/80 hover:bg-slate-700 text-slate-300 border-slate-600'
+                    }`}
+                  >
+                    <span className={isFieldActive(f.field_key) ? 'text-white' : 'text-slate-400'}>{f.field_key}:</span>
+                    <span className="font-semibold text-white">{f.value}</span>
+                    <span className="text-[9px] opacity-75">({Math.round(f.confidence * 100)}%)</span>
+                  </button>
                 ))}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Right Side: Evidence-Linked Findings & 7-State Verification (5 Cols) */}
+                {/* Right Side: Evidence-Linked Findings & 7-State Verification (5 Cols) */}
         <div className="lg:col-span-5 space-y-6">
           {/* Findings Checklist */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
