@@ -20,8 +20,10 @@ export default function AuditorDashboardPage() {
   const [activeTab, setActiveTab] = useState('home');
   const [logs, setLogs] = useState(getStoredAuditLog());
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     fetch('/api/audit')
       .then((r) => r.json())
       .then((data) => {
@@ -32,10 +34,11 @@ export default function AuditorDashboardPage() {
             actor: row.actor,
             action: row.action,
             entity: row.entity,
-            payload: typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload,
-            prevHash: row.prev_hash,
-            hash: row.hash,
-            at: row.at,
+            payload: typeof row.payload === 'string' ? JSON.parse(row.payload) : (row.payload || {}),
+            prev_hash: row.prev_hash || '',
+            prevHash: row.prev_hash || '',
+            hash: row.hash || '',
+            at: row.at || '',
           })).sort((a: any, b: any) => a.id - b.id);
           setLogs(formatted);
         }
@@ -84,8 +87,27 @@ export default function AuditorDashboardPage() {
   };
 
   const handleReset = () => {
-    resetDemoData();
-    setLogs(getStoredAuditLog());
+    fetch('/api/audit')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+          const formatted = data.data.map((row: any) => ({
+            id: Number(row.id),
+            actor: row.actor,
+            action: row.action,
+            entity: row.entity,
+            payload: typeof row.payload === 'string' ? JSON.parse(row.payload) : (row.payload || {}),
+            prev_hash: row.prev_hash || '',
+            prevHash: row.prev_hash || '',
+            hash: row.hash || '',
+            at: row.at || '',
+          })).sort((a: any, b: any) => a.id - b.id);
+          setLogs(formatted);
+        } else {
+          setLogs(getStoredAuditLog());
+        }
+      })
+      .catch(() => setLogs(getStoredAuditLog()));
     setVerifyStatus({ tested: false });
   };
 
@@ -137,23 +159,27 @@ export default function AuditorDashboardPage() {
                 </h2>
 
                 <div className="relative h-44 flex items-center justify-center">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={donutData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={68}
-                        paddingAngle={3}
-                        dataKey="value"
-                      >
-                        {donutData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
+                  {mounted ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={donutData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={68}
+                          paddingAngle={3}
+                          dataKey="value"
+                        >
+                          {donutData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="w-28 h-28 rounded-full border-8 border-emerald-600/30 animate-pulse" />
+                  )}
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                     <span className="text-2xl font-extrabold text-[#1E7B34]">92%</span>
                     <span className="text-[10px] text-slate-500 font-semibold uppercase">Completed</span>
@@ -255,21 +281,31 @@ export default function AuditorDashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-slate-700">
-                    {logs.slice(0, 6).map((item) => (
-                      <tr key={item.id} className="hover:bg-slate-50 font-mono text-[11px]">
-                        <td className="py-2.5 px-3 font-bold text-slate-900">{item.id}</td>
-                        <td className="py-2.5 px-3 font-sans text-slate-700 font-semibold">{item.actor}</td>
-                        <td className="py-2.5 px-3">
-                          <span className="bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded text-[10px] font-bold border border-slate-200">
-                            {item.action}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3 font-sans text-slate-600">{item.entity}</td>
-                        <td className="py-2.5 px-3 text-slate-500 font-sans">{new Date(item.at).toLocaleTimeString('en-IN')}</td>
-                        <td className="py-2.5 px-3 text-emerald-800 font-semibold">{item.hash.slice(0, 12)}...</td>
-                        <td className="py-2.5 px-3 text-slate-400">{item.prev_hash.slice(0, 10)}...</td>
-                      </tr>
-                    ))}
+                    {logs.slice(0, 6).map((item: any) => {
+                      const prevHashVal = item.prev_hash || item.prevHash || '';
+                      const hashVal = item.hash || '';
+                      return (
+                        <tr key={item.id} className="hover:bg-slate-50 font-mono text-[11px]">
+                          <td className="py-2.5 px-3 font-bold text-slate-900">{item.id}</td>
+                          <td className="py-2.5 px-3 font-sans text-slate-700 font-semibold">{item.actor}</td>
+                          <td className="py-2.5 px-3">
+                            <span className="bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded text-[10px] font-bold border border-slate-200">
+                              {item.action}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3 font-sans text-slate-600">{item.entity}</td>
+                          <td className="py-2.5 px-3 text-slate-500 font-sans" suppressHydrationWarning>
+                            {mounted && item.at ? new Date(item.at).toLocaleTimeString('en-IN') : item.at || '—'}
+                          </td>
+                          <td className="py-2.5 px-3 text-emerald-800 font-semibold">
+                            {hashVal ? `${hashVal.slice(0, 12)}...` : '—'}
+                          </td>
+                          <td className="py-2.5 px-3 text-slate-400">
+                            {prevHashVal ? `${prevHashVal.slice(0, 10)}...` : '—'}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -297,20 +333,20 @@ export default function AuditorDashboardPage() {
             </div>
 
             <div className="space-y-3 font-mono text-xs">
-              {logs.map((event) => (
+              {logs.map((event: any) => (
                 <div key={event.id} className="p-3 bg-slate-50 border border-slate-200 rounded space-y-1.5">
                   <div className="flex justify-between items-center font-sans">
                     <span className="font-bold text-slate-800">Block #{event.id} • {event.action}</span>
                     <span className="text-[11px] text-slate-400">{event.at}</span>
                   </div>
                   <div className="text-[11px] text-slate-600 truncate">
-                    <strong>Hash:</strong> {event.hash}
+                    <strong>Hash:</strong> {event.hash || '—'}
                   </div>
                   <div className="text-[11px] text-slate-400 truncate">
-                    <strong>Prev:</strong> {event.prev_hash}
+                    <strong>Prev:</strong> {event.prev_hash || event.prevHash || '—'}
                   </div>
                   <div className="p-2 bg-white rounded border border-slate-200 text-[10px] text-slate-700">
-                    <strong>Payload:</strong> {JSON.stringify(event.payload)}
+                    <strong>Payload:</strong> {JSON.stringify(event.payload || {})}
                   </div>
                 </div>
               ))}
