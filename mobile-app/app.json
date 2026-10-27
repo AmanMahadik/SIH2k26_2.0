@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "NirikshAI EVC Inspector",
+    "slug": "nirikshai-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B2E5C"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.code4bharat.nirikshai",
+      "infoPlist": {
+        "NSCameraUsageDescription": "AICTE EVC Inspector requires camera access to capture geotagged photos of laboratories and physical infrastructure.",
+        "NSLocationWhenInUseUsageDescription": "NirikshAI requires real-time GPS coordinates to stamp tamper-proof geotags on physical inspection evidence."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0B2E5C"
+      },
+      "package": "com.code4bharat.nirikshai",
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "nirikshai-sih2026-evc"
+      }
+    }
+  }
+}
