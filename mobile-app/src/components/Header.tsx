@@ -1,6 +1,6 @@
 // mobile-app/src/components/Header.tsx
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { COLORS } from '../constants/theme';
 
 interface HeaderProps {
@@ -24,17 +24,13 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Brand Logo & Name */}
+      {/* Brand Logo & Name with Official Banner */}
       <View style={styles.brandRow}>
-        <View style={styles.logoCircle}>
-          <Text style={styles.logoIcon}>🏛️</Text>
-          <Text style={styles.logoSmallText}>AICTE EVC</Text>
-        </View>
-
-        <View style={styles.titleContainer}>
-          <Text style={styles.titleEnglish}>NirikshAI</Text>
-          <Text style={styles.titleHindi}>निरीक्ष-AI</Text>
-        </View>
+        <Image
+          source={require('../../assets/nirikshai_banner_logo.png')}
+          style={styles.logoBanner}
+          resizeMode="contain"
+        />
       </View>
 
       {/* Language Switcher Pills */}
@@ -82,6 +78,10 @@ const styles = StyleSheet.create({
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  logoBanner: {
+    width: 140,
+    height: 38,
   },
   logoCircle: {
     width: 44,

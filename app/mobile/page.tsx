@@ -97,17 +97,14 @@ export default function MobileAppPage() {
           </div>
         </div>
 
-        {/* Global Mobile Header (Matching Screenshots) */}
-        <header className="px-4 py-2 flex items-center justify-between border-b border-slate-200/60 bg-[#F9F8F5] z-20">
+        {/* Global Mobile Header with Official NirikshAi Emblem Banner */}
+        <header className="px-3 py-2 flex items-center justify-between border-b border-slate-200/60 bg-[#F9F8F5] z-20">
           <div className="flex items-center space-x-2">
-            <div className="w-9 h-9 rounded-full bg-white border-2 border-blue-600 flex flex-col items-center justify-center shadow-xs">
-              <span className="text-xs">👥</span>
-              <span className="text-[6px] font-black text-[#0B2E5C] leading-none">जन-सहायक</span>
-            </div>
-            <div>
-              <h1 className="text-sm font-black text-[#0B2E5C] leading-none tracking-tight">Jan-Sahayak</h1>
-              <p className="text-[10px] font-bold text-[#FF8C00] leading-tight">जन-सहायक</p>
-            </div>
+            <img
+              src="/nirikshai_banner_logo.png"
+              alt="NirikshAi - AICTE Regulation Bureau"
+              className="h-8 max-w-[170px] object-contain"
+            />
           </div>
 
           {/* Language Switcher */}
