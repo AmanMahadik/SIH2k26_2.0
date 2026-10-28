@@ -1,6 +1,7 @@
 // mobile-app/src/components/BottomNav.tsx
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS } from '../constants/theme';
 
 export type NavTab = 'home' | 'inspection' | 'scan' | 'alerts' | 'profile';
@@ -18,8 +19,13 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   onQuickActionPress,
   pendingAlertsCount = 2,
 }) => {
+  const insets = useSafeAreaInsets();
+  const bottomOffset = Platform.OS === 'ios'
+    ? Math.max(insets.bottom, 18)
+    : Math.max(insets.bottom + 8, 12);
+
   return (
-    <View style={styles.navWrapper}>
+    <View style={[styles.navWrapper, { bottom: bottomOffset }]} pointerEvents="box-none">
       <View style={[styles.navContainer, SHADOWS.floatingNav]}>
         {/* Tab 1: Home */}
         <TouchableOpacity
@@ -100,10 +106,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 const styles = StyleSheet.create({
   navWrapper: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 24 : 14,
     left: 14,
     right: 14,
     alignItems: 'center',
+    zIndex: 999,
   },
   navContainer: {
     flexDirection: 'row',
@@ -112,24 +118,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 36,
     paddingHorizontal: 8,
-    paddingVertical: 7,
+    paddingVertical: 6,
     width: '100%',
     borderWidth: 1,
-    borderColor: '#EAEAEA',
+    borderColor: '#E2E8F0',
+    overflow: 'visible',
   },
   tabButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 22,
-    minWidth: 58,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    borderRadius: 20,
+    minWidth: 54,
   },
   tabButtonActive: {
     backgroundColor: COLORS.navActiveBg,
   },
   tabIcon: {
-    fontSize: 18,
+    fontSize: 17,
     color: COLORS.navInactiveText,
   },
   tabIconActive: {
@@ -153,9 +160,9 @@ const styles = StyleSheet.create({
     top: -4,
     right: -8,
     backgroundColor: '#EF4444',
-    borderRadius: 9,
-    width: 16,
-    height: 16,
+    borderRadius: 8,
+    width: 15,
+    height: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -171,9 +178,14 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primaryOrange,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 3,
+    borderWidth: 3.5,
     borderColor: '#FFFFFF',
-    transform: [{ translateY: -14 }],
+    transform: [{ translateY: -16 }],
+    elevation: 8,
+    shadowColor: '#FF8C00',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
   },
   micIcon: {
     fontSize: 22,

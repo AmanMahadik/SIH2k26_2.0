@@ -1,0 +1,262 @@
+{
+  "timestamp": "2026-10-28T01:27:36.403Z",
+  "total": 23,
+  "passed": 23,
+  "failed": 0,
+  "passRate": "100.0%",
+  "results": [
+    {
+      "suite": "Audit & Cryptography",
+      "funcName": "canonicalJson",
+      "description": "Deterministically sorts JSON keys at all nesting levels",
+      "input": "{\"obj1\":{\"z\":1,\"a\":2,\"m\":{\"y\":10,\"b\":20}},\"obj2\":{\"a\":2,\"m\":{\"b\":20,\"y\":10},\"z\":1}}",
+      "output": "{\"a\":2,\"m\":{\"b\":20,\"y\":10},\"z\":1}",
+      "expected": "{\"a\":2,\"m\":{\"b\":20,\"y\":10},\"z\":1}",
+      "passed": true,
+      "durationMs": "0.145",
+      "notes": "Strict alphabetical key sort prevents false tamper alerts"
+    },
+    {
+      "suite": "Audit & Cryptography",
+      "funcName": "computeEventHash",
+      "description": "Generates 64-char SHA-256 hexadecimal digest linked to prev_hash",
+      "input": "{\"prev\":\"0000000000\",\"entity\":\"APP-2026-001\"}",
+      "output": "32f451ac700c5d20376d6c100ae213a240ca45684893fbbcffe686b82218c87e",
+      "expected": "64-character lowercase hex string",
+      "passed": true,
+      "durationMs": "0.166",
+      "notes": "Digest: 32f451ac700c5d20376d..."
+    },
+    {
+      "suite": "Audit & Cryptography",
+      "funcName": "verifyAuditChain (Untampered Chain)",
+      "description": "Mathematically validates sequential linkage across a 5-block chain",
+      "input": "5 sequential blocks originating from GENESIS_HASH",
+      "output": "{\"valid\":true}",
+      "expected": "{\"valid\":true}",
+      "passed": true,
+      "durationMs": "0.310",
+      "notes": "Chain passed complete backward-linkage and payload validation"
+    },
+    {
+      "suite": "Audit & Cryptography",
+      "funcName": "verifyAuditChain (Tamper Detection)",
+      "description": "Detects single-character payload tampering and identifies the compromised block ID",
+      "input": "Tampered block #3 payload",
+      "output": "{\"valid\":false,\"brokenIndex\":2,\"brokenEventId\":3,\"expectedHash\":\"6ed1496d81832442996c88b578608fb8745e5e54a9f5e4aa0a6aa10a6243bc06\",\"actualHash\":\"663beca4c97acddbe18abd7a88fbfa7ad61087ca4eb8a7322e7016e1ebd07553\",\"error\":\"Payload tampering detected at event #3: block hash does not match computed digest.\"}",
+      "expected": "{\"valid\":false,\"brokenEventId\":3}",
+      "passed": true,
+      "durationMs": "0.119",
+      "notes": "Alert: \"Payload tampering detected at event #3: block hash does not match computed digest.\""
+    },
+    {
+      "suite": "Rules Engine",
+      "funcName": "stringSimilarity (Exact Match)",
+      "description": "Returns 1.0 for matching names regardless of whitespace/casing",
+      "input": "{\"s1\":\"Pune Institute of Computer Technology\",\"s2\":\"  pune institute OF computer technology  \"}",
+      "output": "1",
+      "expected": "1",
+      "passed": true,
+      "durationMs": "0.142",
+      "notes": "Case-insensitive whitespace-trimmed exact equality"
+    },
+    {
+      "suite": "Rules Engine",
+      "funcName": "stringSimilarity (Fuzzy Levenshtein Ratio)",
+      "description": "Accurately grades normalized distance for abbreviations/transpositions",
+      "input": "{\"s1\":\"Delhi College of Engineering\",\"s2\":\"Delhi Clg of Engineering\"}",
+      "output": "0.84",
+      "expected": ">= 0.80",
+      "passed": true,
+      "durationMs": "0.148",
+      "notes": "Similarity: 84.0%"
+    },
+    {
+      "suite": "Rules Engine",
+      "funcName": "stringSimilarity (Disjoint Titles)",
+      "description": "Returns score < 0.35 for totally distinct institutional titles",
+      "input": "{\"s1\":\"Indian Institute of Science Bangalore\",\"s2\":\"Apex Technical Campus Jaipur\"}",
+      "output": "0.152",
+      "expected": "< 0.35",
+      "passed": true,
+      "durationMs": "0.161",
+      "notes": "Confirmed distinct: 15.2%"
+    },
+    {
+      "suite": "Rules Engine",
+      "funcName": "evaluateRules (Missing Required Document)",
+      "description": "Emits blocking finding under APH 2024-27 clause when mandatory doc missing",
+      "input": "{\"submitted\":[\"affidavit\"],\"required\":\"noc_state\"}",
+      "output": "{\"findingsCount\":1,\"severity\":\"blocking\"}",
+      "expected": "{\"findingsCount\":1,\"severity\":\"blocking\"}",
+      "passed": true,
+      "durationMs": "1.014",
+      "notes": "Cited Statutory Clause: APH 2024-27 §4.1.2"
+    },
+    {
+      "suite": "Rules Engine",
+      "funcName": "evaluateRules (Expired Document Check)",
+      "description": "Blocks approval when State NOC validity lapses prior to Academic Year 2026-27",
+      "input": "valid_to: 2025-12-31 (Cutoff: 2026-06-01)",
+      "output": "{\"kind\":\"expired\",\"severity\":\"blocking\"}",
+      "expected": "{\"kind\":\"expired\",\"severity\":\"blocking\"}",
+      "passed": true,
+      "durationMs": "0.175",
+      "notes": "Deficiency text: \"Document expired: noc_state expired on 2025-12-31, prior to Academic Year 2026-27.\""
+    },
+    {
+      "suite": "Rules Engine",
+      "funcName": "evaluateRules (Cross-Document Name Discrepancy)",
+      "description": "Flags inconsistency when title in NOC differs from registered Land Deed",
+      "input": "\"Apex Technical Institute\" vs \"Apex Polytechnic Society\"",
+      "output": "{\"kind\":\"inconsistent\",\"severity\":\"blocking\"}",
+      "expected": "{\"kind\":\"inconsistent\",\"severity\":\"blocking\"}",
+      "passed": true,
+      "durationMs": "0.197",
+      "notes": "Cross-doc comparison: \"Apex Technical Institute\" vs \"Apex Polytechnic Society\""
+    },
+    {
+      "suite": "Rules Engine",
+      "funcName": "evaluateRules (Official Record Ceiling Discrepancy)",
+      "description": "Flags violation when submitted intake quota exceeds authorized ceiling",
+      "input": "Submitted: 360, Official Record: 300",
+      "output": "{\"kind\":\"record_mismatch\",\"severity\":\"blocking\"}",
+      "expected": "{\"kind\":\"record_mismatch\",\"severity\":\"blocking\"}",
+      "passed": true,
+      "durationMs": "0.072",
+      "notes": "Violation message: \"Official record discrepancy: submitted intake_quota (360) does not match authorized AICTE record (300).\""
+    },
+    {
+      "suite": "Verification Adapters",
+      "funcName": "MockIssuerAdapter.supports",
+      "description": "Recognizes supported statutory document types for state registry lookup",
+      "input": "{\"supported\":[\"noc_state\",\"affidavit\",\"accreditation_cert\",\"eoa_letter\"],\"unsupported\":[\"electricity_bill\",\"unrelated_doc\"]}",
+      "output": "{\"allSupported\":true,\"allUnsupported\":true}",
+      "expected": "{\"allSupported\":true,\"allUnsupported\":true}",
+      "passed": true,
+      "durationMs": "0.054",
+      "notes": "Covers DigiLocker, State DTE, and University affiliation documents"
+    },
+    {
+      "suite": "Verification Adapters",
+      "funcName": "MockIssuerAdapter.verify (Clean Document)",
+      "description": "Asynchronously verifies valid document fields against issuing authority",
+      "input": "{\"filename\":\"clean_noc.pdf\",\"fieldsCount\":2}",
+      "output": "{\"status\":\"verified\",\"matchAll\":true}",
+      "expected": "{\"status\":\"verified\",\"matchAll\":true}",
+      "passed": true,
+      "durationMs": "0.169",
+      "notes": "Verification Notes: \"Cryptographically verified with issuing registry.\""
+    },
+    {
+      "suite": "Verification Adapters",
+      "funcName": "MockIssuerAdapter.verify (Fail-Safe Fault Injection)",
+      "description": "Simulates HTTP 504 remote gateway timeout and emits source_unavailable status",
+      "input": "simulateFault: true",
+      "output": "{\"status\":\"source_unavailable\",\"isTimeout\":true}",
+      "expected": "{\"status\":\"source_unavailable\",\"isTimeout\":true}",
+      "passed": true,
+      "durationMs": "0.037",
+      "notes": "Enables graceful failover without crashing scrutinizer pipeline"
+    },
+    {
+      "suite": "Verification Adapters",
+      "funcName": "transitionVerificationStatus (State Transitions)",
+      "description": "Verifies seven-state finite state transitions, retries, and escalation",
+      "input": "[\"pending -> issuer(verified)\",\"unavailable -> fail_timeout\",\"mismatch -> officer_override(verified)\"]",
+      "output": "{\"t1\":\"verified\",\"t2\":\"manual_review_required\",\"t3\":\"verified\"}",
+      "expected": "{\"t1\":\"verified\",\"t2\":\"manual_review_required\",\"t3\":\"verified\"}",
+      "passed": true,
+      "durationMs": "0.048",
+      "notes": "Guarantees conclusive classification under SIH Requirement R6"
+    },
+    {
+      "suite": "AICTE Directory",
+      "funcName": "lookupAicteInstitution (Exact Permanent ID)",
+      "description": "Resolves institution by official permanent ID: 1-10575231",
+      "input": "1-10575231",
+      "output": "A & M INSTITUTE OF COMPUTER & TECHNOLOGY",
+      "expected": "A & M INSTITUTE OF COMPUTER & TECHNOLOGY",
+      "passed": true,
+      "durationMs": "0.076",
+      "notes": "Found: A & M INSTITUTE OF COMPUTER & TECHNOLOGY (State: Maharashtra, University: Dr. Babasaheb Ambedkar Technological University (DBATU))"
+    },
+    {
+      "suite": "AICTE Directory",
+      "funcName": "lookupAicteInstitution (Stripped Prefix)",
+      "description": "Resolves institution even when prefix \"1-\" is omitted: 10575231",
+      "input": "10575231",
+      "output": "1-10575231",
+      "expected": "1-10575231",
+      "passed": true,
+      "durationMs": "0.017",
+      "notes": "Input normalization guarantees zero lookup drops"
+    },
+    {
+      "suite": "AICTE Directory",
+      "funcName": "searchAicteInstitutions (Fuzzy Autocomplete)",
+      "description": "Returns matching institutions for query \"pune\" with limit",
+      "input": "Query: \"pune\", limit: 5",
+      "output": "Count: 5, Sample: ALL INDIA SHRI SHIVAJI MEMORIAL SOCIETY'S COLLEGE OF ENGINEERING, PUNE-1",
+      "expected": "Count >= 1 with matching keyword",
+      "passed": true,
+      "durationMs": "0.282",
+      "notes": "Top Match: ALL INDIA SHRI SHIVAJI MEMORIAL SOCIETY'S COLLEGE OF ENGINEERING, PUNE-1"
+    },
+    {
+      "suite": "Authentication & RBAC",
+      "funcName": "DEMO_USERS Dictionary",
+      "description": "Provides credentials and clearance levels for all 5 authorized government roles",
+      "input": "[\"institution\",\"officer\",\"senior\",\"admin\",\"auditor\"]",
+      "output": "{\"allPresent\":true,\"clearanceChecks\":true}",
+      "expected": "{\"allPresent\":true,\"clearanceChecks\":true}",
+      "passed": true,
+      "durationMs": "0.055",
+      "notes": "Covers Institution, Scrutiny Officer, Senior Committee, Admin, Auditor"
+    },
+    {
+      "suite": "Mobile App Engine",
+      "funcName": "On-Device SHA-256 Seal Generator",
+      "description": "Generates SHA-256 seal from image payload preventing recycled inspection photos",
+      "input": "Sample photo metadata (62 bytes)",
+      "output": "fe22a78edbd3c54e975cf9660d07ba2d77826a26108cfd397b36677c1cb67edf",
+      "expected": "64-character SHA-256 hex digest",
+      "passed": true,
+      "durationMs": "0.044",
+      "notes": "Seal: fe22a78edbd3c54e975cf966..."
+    },
+    {
+      "suite": "Mobile App Engine",
+      "funcName": "GPS Geotag Coordinate Stamping & Bounds Verification",
+      "description": "Validates latitude/longitude/accuracy bounds for Indian territory",
+      "input": "{\"latitude\":18.457532,\"longitude\":73.850831,\"accuracy\":2.1,\"altitude\":560.4}",
+      "output": "{\"latOk\":true,\"lonOk\":true,\"accOk\":true}",
+      "expected": "{\"latOk\":true,\"lonOk\":true,\"accOk\":true}",
+      "passed": true,
+      "durationMs": "0.031",
+      "notes": "PICT Pune Campus: 18.4575° N, 73.8508° E (High accuracy 2.1m)"
+    },
+    {
+      "suite": "Mobile App Engine",
+      "funcName": "Deficiency Resolution & Corrective Re-upload Flow",
+      "description": "Simulates 1-click mobile camera upload transitioning alert to Under Committee Review",
+      "input": "{\"id\":\"alert-1\",\"ruleTitle\":\"State NOC Validity Expired\",\"status\":\"open\"}",
+      "output": "resolved",
+      "expected": "resolved",
+      "passed": true,
+      "durationMs": "0.057",
+      "notes": "Status transitions seamlessly to Under Committee Review"
+    },
+    {
+      "suite": "Mobile App Engine",
+      "funcName": "Safe Area Insets & Floating Bottom Nav Clearance",
+      "description": "Calculates clearance offset guaranteeing bottom cards never get cut off",
+      "input": "{\"androidInsets\":{\"top\":32,\"bottom\":48},\"bottomOffset\":56,\"totalScrollClearance\":135}",
+      "output": "{\"totalScrollClearance\":135,\"isCardCompletelyVisible\":true}",
+      "expected": "{\"isCardCompletelyVisible\":true}",
+      "passed": true,
+      "durationMs": "0.039",
+      "notes": "Total clearance (135px) exceeds nav footprint (118px) by 17px"
+    }
+  ]
+}

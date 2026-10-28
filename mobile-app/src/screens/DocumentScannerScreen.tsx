@@ -154,7 +154,7 @@ export const DocumentScannerScreen: React.FC = () => {
           </View>
         ))}
 
-        <View style={{ height: 80 }} />
+        <View style={{ height: 115 }} />
       </ScrollView>
     </View>
   );

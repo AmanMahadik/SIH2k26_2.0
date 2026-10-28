@@ -137,7 +137,7 @@ export const DeficiencyAlertsScreen: React.FC = () => {
           );
         })}
 
-        <View style={{ height: 80 }} />
+        <View style={{ height: 115 }} />
       </ScrollView>
     </View>
   );

@@ -135,7 +135,7 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ onLo
           <Text style={styles.logoutBtnText}>➔ Logout AICTE Account &amp; Lock Mobile App</Text>
         </TouchableOpacity>
 
-        <View style={{ height: 80 }} />
+        <View style={{ height: 115 }} />
       </ScrollView>
     </View>
   );

@@ -171,7 +171,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           ))}
         </View>
 
-        <View style={{ height: 80 }} />
+        <View style={{ height: 115 }} />
       </ScrollView>
     </View>
   );
