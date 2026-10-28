@@ -35,6 +35,7 @@ interface ApplicationRow {
 export default function SeniorOfficerDashboardPage() {
   const [activeTab, setActiveTab] = useState('home');
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   const [stats, setStats] = useState({
     for_review: 3,
@@ -73,6 +74,7 @@ export default function SeniorOfficerDashboardPage() {
   };
 
   useEffect(() => {
+    setMounted(true);
     fetchAzureData();
   }, []);
 
@@ -121,7 +123,7 @@ export default function SeniorOfficerDashboardPage() {
             {/* 1. Three KPI Cards in a Row – Real Azure DB Values */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {/* Card 1: For Review */}
-              <div className="bg-[#EFEAFB] rounded-[6px] border border-[#D5C2F8] p-4.5 shadow-xs flex items-center justify-between">
+              <div className="bg-[#EFEAFB] rounded-[6px] border border-[#D5C2F8] p-5 shadow-xs flex items-center justify-between">
                 <div>
                   <p className="text-xs font-bold text-[#6941C6] uppercase tracking-wide">For Review</p>
                   <h3 className="text-2xl sm:text-3xl font-extrabold text-[#6941C6] mt-1">
@@ -134,7 +136,7 @@ export default function SeniorOfficerDashboardPage() {
               </div>
 
               {/* Card 2: Approved / Cleared */}
-              <div className="bg-[#E6F4EA] rounded-[6px] border border-[#A6E9B9] p-4.5 shadow-xs flex items-center justify-between">
+              <div className="bg-[#E6F4EA] rounded-[6px] border border-[#A6E9B9] p-5 shadow-xs flex items-center justify-between">
                 <div>
                   <p className="text-xs font-bold text-[#1E7B34] uppercase tracking-wide">Approved</p>
                   <h3 className="text-2xl sm:text-3xl font-extrabold text-[#1E7B34] mt-1">
@@ -147,7 +149,7 @@ export default function SeniorOfficerDashboardPage() {
               </div>
 
               {/* Card 3: Escalated */}
-              <div className="bg-[#FDF0E3] rounded-[6px] border border-[#FCD5B5] p-4.5 shadow-xs flex items-center justify-between">
+              <div className="bg-[#FDF0E3] rounded-[6px] border border-[#FCD5B5] p-5 shadow-xs flex items-center justify-between">
                 <div>
                   <p className="text-xs font-bold text-[#E8801A] uppercase tracking-wide">Escalated</p>
                   <h3 className="text-2xl sm:text-3xl font-extrabold text-[#E8801A] mt-1">
@@ -252,22 +254,33 @@ export default function SeniorOfficerDashboardPage() {
                   <span className="text-[11px] font-semibold text-slate-500">AY 2026-27</span>
                 </div>
 
-                <div className="h-44 w-full flex items-center justify-center">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={chartData}
-                        innerRadius={48}
-                        outerRadius={70}
-                        paddingAngle={3}
-                        dataKey="value"
-                      >
-                        {chartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
+                <div className="relative h-44 w-full flex items-center justify-center">
+                  {mounted ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart style={{ outline: 'none' }}>
+                        <Pie
+                          data={chartData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={48}
+                          outerRadius={70}
+                          paddingAngle={3}
+                          dataKey="value"
+                          stroke="none"
+                        >
+                          {chartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="w-28 h-28 rounded-full border-8 border-emerald-600/30 animate-pulse" />
+                  )}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-xl font-black text-[#0B2E5C]">{approvedPct}%</span>
+                    <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Cleared</span>
+                  </div>
                 </div>
 
                 {/* Donut Legend */}
