@@ -28,7 +28,7 @@ export default function AuditorDashboardPage() {
       .then((r) => r.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-          // Format into AuditEvent shape
+          // Format into AuditEvent shape with deterministic ISO timestamp
           const formatted = data.data.map((row: any) => ({
             id: Number(row.id),
             actor: row.actor,
@@ -38,7 +38,7 @@ export default function AuditorDashboardPage() {
             prev_hash: row.prev_hash || '',
             prevHash: row.prev_hash || '',
             hash: row.hash || '',
-            at: row.at || '',
+            at: new Date(row.at).toISOString(),
           })).sort((a: any, b: any) => a.id - b.id);
           setLogs(formatted);
         }
@@ -100,7 +100,7 @@ export default function AuditorDashboardPage() {
             prev_hash: row.prev_hash || '',
             prevHash: row.prev_hash || '',
             hash: row.hash || '',
-            at: row.at || '',
+            at: new Date(row.at).toISOString(),
           })).sort((a: any, b: any) => a.id - b.id);
           setLogs(formatted);
         } else {
@@ -227,17 +227,18 @@ export default function AuditorDashboardPage() {
 
                   <button
                     onClick={handleSimulateTamper}
-                    className="px-3 py-1.5 border border-[#B42318] text-[#B42318] hover:bg-rose-50 text-xs font-bold rounded-[4px] transition-colors"
+                    className="px-3 py-1.5 border border-[#B42318] text-[#B42318] hover:bg-rose-50 text-xs font-bold rounded-[4px] transition-colors flex items-center space-x-1"
                   >
-                    Simulate DB Tampering
+                    <ShieldAlert className="w-3.5 h-3.5" />
+                    <span>Simulate Tamper</span>
                   </button>
 
                   <button
                     onClick={handleReset}
-                    className="p-1.5 text-slate-400 hover:text-slate-700 rounded border border-slate-200 hover:bg-slate-50"
-                    title="Reset ledger"
+                    className="px-3 py-1.5 border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-bold rounded-[4px] transition-colors flex items-center space-x-1"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Reset Ledger</span>
                   </button>
                 </div>
               </div>

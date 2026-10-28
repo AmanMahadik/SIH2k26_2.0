@@ -14,6 +14,9 @@ import {
   UploadCloud,
   FileCheck2,
   ChevronRight,
+  ChevronLeft,
+  Search,
+  BookOpen,
   X,
   ExternalLink,
   HelpCircle,
@@ -22,6 +25,9 @@ import {
   Download,
   AlertTriangle,
   ShieldAlert,
+  ShieldCheck,
+  Eye,
+  Copy,
   Sparkles,
   RefreshCw,
 } from 'lucide-react';
@@ -30,6 +36,14 @@ export default function InstitutionDashboardPage() {
   const [activeTab, setActiveTab] = useState('home');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+
+  // Real PDF Extraction & OCR Modal State
+  const [extractedDocResult, setExtractedDocResult] = useState<any>(null);
+  const [isExtractionModalOpen, setIsExtractionModalOpen] = useState(false);
+  const [activeResultTab, setActiveResultTab] = useState<'fields' | 'canvas' | 'compliance' | 'tamper' | 'text'>('canvas');
+  const [ocrPage, setOcrPage] = useState<number>(0);
+  const [ocrSearch, setOcrSearch] = useState<string>('');
+  const [copiedHash, setCopiedHash] = useState(false);
 
   // Modals
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -108,26 +122,88 @@ export default function InstitutionDashboardPage() {
       .catch((err) => console.error('Error fetching alerts:', err));
   }, []);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const renderHighlightedPageText = (text: string, search: string) => {
+    if (!text) return 'No text layer detected for this page.';
+    if (!search || !search.trim()) return text;
+    const cleanSearch = search.trim();
+    try {
+      const regex = new RegExp(`(${cleanSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+      const parts = text.split(regex);
+      return (
+        <>
+          {parts.map((part, i) =>
+            regex.test(part) ? (
+              <mark key={i} className="bg-amber-300 text-slate-900 font-bold px-0.5 rounded shadow-xs">
+                {part}
+              </mark>
+            ) : (
+              part
+            )
+          )}
+        </>
+      );
+    } catch {
+      return text;
+    }
+  };
+
+  const processPdfFile = async (file: File) => {
+    setIsUploading(true);
+    setUploadSuccess(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('actor', `${profileData.name} (Institution Applicant)`);
+
+      const res = await fetch('/api/documents/extract', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const json = await res.json();
+      setIsUploading(false);
+
+      if (json.success && json.data) {
+        setExtractedDocResult(json.data);
+        setIsExtractionModalOpen(true);
+        setActiveResultTab(json.data.extractedFields?.length > 0 ? 'fields' : 'canvas');
+        setOcrPage(0);
+        setOcrSearch('');
+        setUploadSuccess(`Extracted: ${file.name} (SHA-256: ${json.data.sha256.slice(0, 10)}...)`);
+      } else {
+        alert(json.error || 'Failed to parse PDF.');
+      }
+    } catch (err: any) {
+      setIsUploading(false);
+      alert('Upload failed: ' + err.message);
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    processPdfFile(file);
+    e.target.value = '';
+  };
 
+  const handleLoadSamplePdf = async (sampleFileName: string) => {
     setIsUploading(true);
     try {
-      // Real client-side SHA-256 calculation
-      const buffer = await file.arrayBuffer();
-      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const sha256Hex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-
-      setTimeout(() => {
-        setIsUploading(false);
-        setUploadSuccess(`Uploaded ${file.name} (SHA-256: ${sha256Hex.slice(0, 10)}...)`);
-        setTimeout(() => setUploadSuccess(null), 6000);
-      }, 1000);
-    } catch (err) {
+      const res = await fetch(`/sample_docs/${sampleFileName}`);
+      const blob = await res.blob();
+      const file = new File([blob], sampleFileName, { type: 'application/pdf' });
+      await processPdfFile(file);
+    } catch (err: any) {
       setIsUploading(false);
+      alert('Failed to load sample: ' + err.message);
     }
+  };
+
+  const handleCopyHash = () => {
+    if (!extractedDocResult?.sha256) return;
+    navigator.clipboard.writeText(extractedDocResult.sha256);
+    setCopiedHash(true);
+    setTimeout(() => setCopiedHash(false), 2000);
   };
 
   const handleSaveProfile = (e: React.FormEvent) => {
@@ -381,28 +457,87 @@ export default function InstitutionDashboardPage() {
                 </div>
               </div>
 
-              {/* Quick Rectification / Upload Zone */}
-              <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-50 p-4 rounded-[6px] border border-slate-200">
-                <div className="flex items-center space-x-3 text-xs text-slate-700">
-                  <UploadCloud className="w-5 h-5 text-[#1D4E9E] shrink-0" />
-                  <div>
-                    <span className="font-bold text-[#0B2E5C]">Need to upload a rectified certificate?</span>
-                    <p className="text-[11px] text-slate-500">Supported formats: PDF up to 10MB. Instant SHA-256 seal computed in your browser.</p>
+              {/* Real PDF Upload & Live OCR Inspection Zone */}
+              <div className="pt-4 border-t border-slate-100 space-y-3 bg-gradient-to-r from-blue-50/50 to-slate-50 p-4 rounded-[6px] border border-blue-200">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div className="flex items-center space-x-3 text-xs text-slate-700">
+                    <div className="w-10 h-10 rounded-full bg-[#E8F0FB] text-[#1D4E9E] flex items-center justify-center shrink-0">
+                      <UploadCloud className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-bold text-[#0B2E5C] text-sm">Real PDF Upload & AI Pre-Scrutiny Engine</span>
+                        <span className="text-[10px] font-bold bg-[#1E7B34] text-white px-2 py-0.5 rounded-full">Active</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Upload any institutional certificate (PDF) to run instant text extraction, metadata forensics, and APH 2024-27 rule checks.
+                      </p>
+                    </div>
                   </div>
+
+                  <label className="cursor-pointer bg-[#0B2E5C] hover:bg-[#1D4E9E] text-white text-xs font-bold px-4 py-2.5 rounded-[6px] transition-colors shrink-0 shadow-xs flex items-center space-x-1.5">
+                    {isUploading ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Parsing & Extracting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <UploadCloud className="w-3.5 h-3.5" />
+                        <span>Upload Any PDF</span>
+                      </>
+                    )}
+                    <input type="file" accept=".pdf" onChange={handleFileUpload} className="hidden" disabled={isUploading} />
+                  </label>
                 </div>
 
-                <label className="cursor-pointer bg-white border border-[#0B2E5C] text-[#0B2E5C] hover:bg-slate-100 text-xs font-bold px-4 py-2 rounded-[6px] transition-colors shrink-0">
-                  <span>{isUploading ? 'Computing SHA-256...' : 'Upload Replacement'}</span>
-                  <input type="file" accept=".pdf" onChange={handleFileUpload} className="hidden" disabled={isUploading} />
-                </label>
+                {/* 1-Click Interactive Test Samples */}
+                <div className="pt-2 border-t border-slate-200/60 flex flex-wrap items-center gap-2 text-xs">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Or test with 1-click samples:</span>
+                  <button
+                    type="button"
+                    onClick={() => handleLoadSamplePdf('1_PICT_Clean_EoA_2026_27.pdf')}
+                    disabled={isUploading}
+                    className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-[#1E7B34] border border-emerald-300 rounded text-[11px] font-semibold transition-colors flex items-center space-x-1 cursor-pointer"
+                  >
+                    <span>🟢 Sample 1: Clean Valid EoA</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleLoadSamplePdf('2_Delhi_College_Expired_NOC.pdf')}
+                    disabled={isUploading}
+                    className="px-2.5 py-1 bg-orange-50 hover:bg-orange-100 text-[#E8801A] border border-orange-300 rounded text-[11px] font-semibold transition-colors flex items-center space-x-1 cursor-pointer"
+                  >
+                    <span>🟠 Sample 2: Expired State NOC</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleLoadSamplePdf('3_Apex_Tampered_Intake_Certificate.pdf')}
+                    disabled={isUploading}
+                    className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-[#B42318] border border-rose-300 rounded text-[11px] font-semibold transition-colors flex items-center space-x-1 cursor-pointer"
+                  >
+                    <span>🔴 Sample 3: Tampered Intake Revisions</span>
+                  </button>
+                </div>
+
+                {uploadSuccess && (
+                  <div className="p-2.5 rounded bg-emerald-50 border border-emerald-200 text-[#1E7B34] text-xs font-semibold flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <FileCheck2 className="w-4 h-4 shrink-0" />
+                      <span>{uploadSuccess}</span>
+                    </div>
+                    {extractedDocResult && (
+                      <button
+                        type="button"
+                        onClick={() => setIsExtractionModalOpen(true)}
+                        className="text-[11px] font-bold underline hover:text-emerald-800 cursor-pointer"
+                      >
+                        View Full Extraction Dossier &rarr;
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
-
-              {uploadSuccess && (
-                <div className="p-2.5 rounded bg-emerald-50 border border-emerald-200 text-[#1E7B34] text-xs font-medium flex items-center space-x-2">
-                  <FileCheck2 className="w-4 h-4 shrink-0" />
-                  <span>{uploadSuccess}</span>
-                </div>
-              )}
             </div>
           </div>
         )}
@@ -837,7 +972,6 @@ export default function InstitutionDashboardPage() {
                   <span>View Full Pre-Scrutiny Letterhead Report</span>
                   <ExternalLink className="w-3.5 h-3.5" />
                 </Link>
-
                 <button
                   type="button"
                   onClick={() => setIsDeficienciesModalOpen(false)}
@@ -846,6 +980,473 @@ export default function InstitutionDashboardPage() {
                   Close
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 3: Real AI Extraction, OCR & Regulatory Dossier Modal              */}
+      {/* ========================================================================= */}
+      {isExtractionModalOpen && extractedDocResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full border border-slate-300 max-h-[90vh] flex flex-col overflow-hidden">
+            {/* Modal Header */}
+            <div className="bg-[#0B2E5C] text-white px-5 py-4 flex justify-between items-center shrink-0">
+              <div className="flex items-center space-x-2">
+                <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                <div>
+                  <h3 className="font-bold text-sm tracking-wide">
+                    Document AI Extraction &amp; Forensics Dossier
+                  </h3>
+                  <p className="text-[11px] text-blue-200">
+                    File: {extractedDocResult.filename} • {extractedDocResult.pageCount} Page(s) • {(extractedDocResult.fileSizeBytes / 1024).toFixed(1)} KB
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsExtractionModalOpen(false)}
+                className="text-white/80 hover:text-white p-1 rounded hover:bg-white/10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Cryptographic Seal Bar */}
+            <div className="bg-slate-100 px-5 py-2.5 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs font-mono">
+              <div className="flex items-center space-x-2 text-slate-700">
+                <span className="font-bold text-slate-900 font-sans">SHA-256 Fingerprint:</span>
+                <span className="bg-white px-2 py-0.5 rounded border border-slate-300 text-[11px] text-emerald-700 font-bold">
+                  {extractedDocResult.sha256}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleCopyHash}
+                className="text-[11px] font-sans font-semibold text-[#0B57D0] hover:underline flex items-center space-x-1"
+              >
+                <Copy className="w-3 h-3" />
+                <span>{copiedHash ? 'Copied!' : 'Copy Hash'}</span>
+              </button>
+            </div>
+
+            {/* Modal Navigation Tabs */}
+            <div className="flex border-b border-slate-200 bg-slate-50 px-5 text-xs font-bold text-slate-600 overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => setActiveResultTab('fields')}
+                className={`py-3 px-4 border-b-2 transition-all flex items-center space-x-1.5 shrink-0 ${
+                  activeResultTab === 'fields'
+                    ? 'border-[#0B2E5C] text-[#0B2E5C] bg-white font-bold'
+                    : 'border-transparent hover:text-slate-900'
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Extracted Fields ({extractedDocResult.extractedFields.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveResultTab('canvas')}
+                className={`py-3 px-4 border-b-2 transition-all flex items-center space-x-1.5 shrink-0 ${
+                  activeResultTab === 'canvas'
+                    ? 'border-[#0B2E5C] text-[#0B2E5C] bg-white font-bold'
+                    : 'border-transparent hover:text-slate-900'
+                }`}
+              >
+                <BookOpen className="w-3.5 h-3.5 text-[#1D4E9E]" />
+                <span className="flex items-center space-x-1">
+                  <span>Visual OCR Canvas</span>
+                  <span className="bg-blue-100 text-[#0B2E5C] text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+                    {extractedDocResult.pageCount || 1}p
+                  </span>
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveResultTab('compliance')}
+                className={`py-3 px-4 border-b-2 transition-all flex items-center space-x-1.5 shrink-0 ${
+                  activeResultTab === 'compliance'
+                    ? 'border-[#0B2E5C] text-[#0B2E5C] bg-white font-bold'
+                    : 'border-transparent hover:text-slate-900'
+                }`}
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>Regulatory Rules ({extractedDocResult.complianceFlags.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveResultTab('tamper')}
+                className={`py-3 px-4 border-b-2 transition-all flex items-center space-x-1.5 shrink-0 ${
+                  activeResultTab === 'tamper'
+                    ? 'border-[#0B2E5C] text-[#0B2E5C] bg-white font-bold'
+                    : 'border-transparent hover:text-slate-900'
+                }`}
+              >
+                <ShieldAlert className="w-3.5 h-3.5" />
+                <span>
+                  Forensic Tamper Triage
+                  {extractedDocResult.tamperIndicators.length > 0 && (
+                    <span className="ml-1.5 bg-rose-600 text-white text-[10px] px-1.5 py-0.2 rounded-full">
+                      {extractedDocResult.tamperIndicators.length}
+                    </span>
+                  )}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveResultTab('text')}
+                className={`py-3 px-4 border-b-2 transition-all flex items-center space-x-1.5 shrink-0 ${
+                  activeResultTab === 'text'
+                    ? 'border-[#0B2E5C] text-[#0B2E5C] bg-white font-bold'
+                    : 'border-transparent hover:text-slate-900'
+                }`}
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>Raw Stream</span>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 overflow-y-auto space-y-4 flex-1">
+              {/* Classification Banner */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 rounded-[6px] bg-blue-50 border border-blue-200 text-xs gap-2">
+                <div className="space-y-0.5">
+                  <div className="flex items-center space-x-2">
+                    <span className="font-semibold text-slate-600">Identified Document Type: </span>
+                    <span className="font-bold text-[#0B2E5C] uppercase tracking-wide">
+                      {extractedDocResult.docType.replace(/_/g, ' ')}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    Extracted: <span className="font-bold text-slate-700">{extractedDocResult.wordCount?.toLocaleString() || 0} words</span> across <span className="font-bold text-slate-700">{extractedDocResult.pageCount || 1} pages</span> ({extractedDocResult.characterCount?.toLocaleString() || 0} characters)
+                  </div>
+                </div>
+                <span className="bg-white border border-blue-200 text-[#1D4E9E] font-bold px-2 py-0.5 rounded text-[11px] shrink-0">
+                  Classification Confidence: {(extractedDocResult.docTypeConfidence * 100).toFixed(0)}%
+                </span>
+              </div>
+
+              {/* TAB 1: Extracted Regulatory Fields */}
+              {activeResultTab === 'fields' && (
+                <div className="space-y-3">
+                  <table className="w-full text-xs text-left border border-slate-200 rounded overflow-hidden">
+                    <thead className="bg-slate-100 text-[#0B2E5C] font-bold">
+                      <tr>
+                        <th className="py-2 px-3">Field Key</th>
+                        <th className="py-2 px-3">Extracted Value</th>
+                        <th className="py-2 px-3">Confidence</th>
+                        <th className="py-2 px-3">Location</th>
+                        <th className="py-2 px-3 text-right">Inspect</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-slate-800">
+                      {extractedDocResult.extractedFields.length > 0 ? (
+                        extractedDocResult.extractedFields.map((fld: any) => (
+                          <tr key={fld.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-2.5 px-3 font-semibold text-slate-700 capitalize">
+                              {fld.field_key.replace(/_/g, ' ')}
+                            </td>
+                            <td className="py-2.5 px-3 font-bold text-[#0B2E5C]">
+                              {fld.value}
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <span className="inline-block bg-emerald-50 text-[#1E7B34] border border-emerald-200 px-2 py-0.5 rounded font-mono text-[10px] font-bold">
+                                {(fld.confidence * 100).toFixed(0)}%
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-500 font-mono">
+                              Page {fld.page + 1}
+                            </td>
+                            <td className="py-2.5 px-3 text-right">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOcrPage(fld.page || 0);
+                                  setOcrSearch(fld.value);
+                                  setActiveResultTab('canvas');
+                                }}
+                                className="inline-flex items-center space-x-1 text-[11px] font-bold text-[#0B57D0] hover:text-[#0B2E5C] hover:underline cursor-pointer"
+                              >
+                                <span>Inspect in OCR</span>
+                                <ChevronRight className="w-3 h-3" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="py-6 text-center text-slate-500 text-xs">
+                            No specific institutional form fields recognized in this PDF. Switch to the <strong>Visual OCR Canvas</strong> tab to inspect full pages.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* TAB 2: Visual OCR Document Canvas */}
+              {activeResultTab === 'canvas' && (
+                <div className="space-y-4">
+                  {/* Canvas Navigation Toolbar */}
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-100 p-3 rounded-[6px] border border-slate-200">
+                    {/* Pagination Controls */}
+                    <div className="flex items-center space-x-1.5 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setOcrPage(0)}
+                        disabled={ocrPage === 0}
+                        className="px-2 py-1 bg-white border border-slate-300 rounded hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-slate-700 cursor-pointer text-[11px]"
+                        title="First Page"
+                      >
+                        &laquo; First
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setOcrPage((p) => Math.max(0, p - 1))}
+                        disabled={ocrPage === 0}
+                        className="p-1 bg-white border border-slate-300 rounded hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                        title="Previous Page"
+                      >
+                        <ChevronLeft className="w-4 h-4 text-slate-700" />
+                      </button>
+
+                      <div className="flex items-center space-x-1 px-2.5 py-1 bg-white border border-slate-300 rounded font-semibold text-slate-800 text-xs shadow-xs">
+                        <span>Page</span>
+                        <select
+                          value={ocrPage}
+                          onChange={(e) => setOcrPage(Number(e.target.value))}
+                          className="font-bold text-[#0B2E5C] bg-transparent outline-none cursor-pointer"
+                        >
+                          {Array.from({ length: extractedDocResult.pageCount || 1 }).map((_, i) => (
+                            <option key={i} value={i}>
+                              {i + 1}
+                            </option>
+                          ))}
+                        </select>
+                        <span className="text-slate-500">of {extractedDocResult.pageCount || 1}</span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setOcrPage((p) => Math.min((extractedDocResult.pageCount || 1) - 1, p + 1))}
+                        disabled={ocrPage >= (extractedDocResult.pageCount || 1) - 1}
+                        className="p-1 bg-white border border-slate-300 rounded hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                        title="Next Page"
+                      >
+                        <ChevronRight className="w-4 h-4 text-slate-700" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setOcrPage((extractedDocResult.pageCount || 1) - 1)}
+                        disabled={ocrPage >= (extractedDocResult.pageCount || 1) - 1}
+                        className="px-2 py-1 bg-white border border-slate-300 rounded hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-slate-700 cursor-pointer text-[11px]"
+                        title="Last Page"
+                      >
+                        Last &raquo;
+                      </button>
+                    </div>
+
+                    {/* In-text Live Search */}
+                    <div className="relative w-full sm:w-64">
+                      <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        value={ocrSearch}
+                        onChange={(e) => setOcrSearch(e.target.value)}
+                        placeholder="Search OCR text on page..."
+                        className="w-full pl-8 pr-7 py-1 text-xs border border-slate-300 rounded bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                      {ocrSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setOcrSearch('')}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-xs font-bold"
+                        >
+                          &times;
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Summary Metric Cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+                    <div className="bg-slate-50 p-2 border border-slate-200 rounded">
+                      <span className="text-[10px] text-slate-500 block">Total Pages</span>
+                      <span className="font-bold text-slate-800 text-sm">{extractedDocResult.pageCount || 1}</span>
+                    </div>
+                    <div className="bg-slate-50 p-2 border border-slate-200 rounded">
+                      <span className="text-[10px] text-slate-500 block">Extracted Words</span>
+                      <span className="font-bold text-[#1D4E9E] text-sm">{(extractedDocResult.wordCount || 0).toLocaleString()}</span>
+                    </div>
+                    <div className="bg-slate-50 p-2 border border-slate-200 rounded">
+                      <span className="text-[10px] text-slate-500 block">Current Page Words</span>
+                      <span className="font-bold text-slate-800 text-sm">
+                        {((extractedDocResult.pagesText?.[ocrPage] || '').trim().split(/\s+/).filter(Boolean).length).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="bg-slate-50 p-2 border border-slate-200 rounded">
+                      <span className="text-[10px] text-slate-500 block">OCR Parser State</span>
+                      <span className="font-bold text-emerald-700 text-xs flex items-center justify-center space-x-1 mt-0.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span>Stream Live</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Detected Entities on this page */}
+                  {extractedDocResult.extractedFields.filter((f: any) => f.page === ocrPage).length > 0 && (
+                    <div className="p-2.5 bg-blue-50 border border-blue-200 rounded flex flex-wrap items-center gap-1.5 text-xs">
+                      <span className="font-bold text-[#0B2E5C] text-[11px] flex items-center space-x-1">
+                        <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Entities Anchored to Page {ocrPage + 1}:</span>
+                      </span>
+                      {extractedDocResult.extractedFields
+                        .filter((f: any) => f.page === ocrPage)
+                        .map((f: any) => (
+                          <span
+                            key={f.id}
+                            className="bg-white border border-blue-300 text-blue-900 font-semibold px-2 py-0.5 rounded text-[11px] shadow-xs"
+                          >
+                            {f.field_key.replace(/_/g, ' ')}: <span className="font-bold text-[#0B2E5C]">{f.value}</span>
+                          </span>
+                        ))}
+                    </div>
+                  )}
+
+                  {/* Document Canvas Sheet */}
+                  <div className="bg-slate-200/70 p-4 sm:p-6 rounded-lg border border-slate-300 flex justify-center">
+                    <div className="w-full max-w-3xl bg-white shadow-lg border border-slate-300 rounded p-6 sm:p-8 min-h-[440px] flex flex-col justify-between">
+                      {/* Document Sheet Header */}
+                      <div className="border-b border-slate-200 pb-2.5 mb-4 flex justify-between items-center text-[10px] text-slate-400 uppercase tracking-widest font-mono">
+                        <span>{extractedDocResult.filename} • PAGE {ocrPage + 1} OF {extractedDocResult.pageCount || 1}</span>
+                        <span className="text-emerald-700 font-semibold">100% Native Text Layer</span>
+                      </div>
+
+                      {/* Document Page Content */}
+                      <div className="text-slate-800 text-xs sm:text-[13px] leading-relaxed whitespace-pre-wrap font-sans flex-1 overflow-y-auto max-h-[460px] pr-2">
+                        {renderHighlightedPageText(
+                          extractedDocResult.pagesText?.[ocrPage] ||
+                            (ocrPage === 0 ? extractedDocResult.rawTextPreview : '') ||
+                            'No text layer extracted for this specific page.',
+                          ocrSearch
+                        )}
+                      </div>
+
+                      {/* Document Sheet Footer */}
+                      <div className="border-t border-slate-200 pt-3 mt-4 flex justify-between items-center text-[10px] text-slate-400 font-mono">
+                        <span>Digest: {extractedDocResult.sha256.slice(0, 20)}...</span>
+                        <span>Page {ocrPage + 1} / {extractedDocResult.pageCount || 1}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: Statutory Compliance Rules */}
+              {activeResultTab === 'compliance' && (
+                <div className="space-y-3">
+                  {extractedDocResult.complianceFlags.map((flag: any, i: number) => (
+                    <div
+                      key={i}
+                      className={`p-3.5 rounded-[6px] border text-xs space-y-1.5 ${
+                        flag.status === 'PASSED'
+                          ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
+                          : flag.status === 'FLAGGED'
+                          ? 'bg-rose-50 border-rose-200 text-rose-950'
+                          : 'bg-amber-50 border-amber-200 text-amber-950'
+                      }`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center space-x-2">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold text-white uppercase ${
+                              flag.status === 'PASSED'
+                                ? 'bg-[#1E7B34]'
+                                : flag.status === 'FLAGGED'
+                                ? 'bg-[#B42318]'
+                                : 'bg-[#E8801A]'
+                            }`}
+                          >
+                            {flag.status}
+                          </span>
+                          <span className="font-bold text-slate-900">{flag.ruleId}</span>
+                        </div>
+                        <span className="font-mono text-[11px] font-semibold bg-white/80 px-2 py-0.5 rounded border border-slate-200">
+                          {flag.clause}
+                        </span>
+                      </div>
+                      <p className="text-slate-800 font-medium">{flag.message}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* TAB 3: Forensic Tamper Triage */}
+              {activeResultTab === 'tamper' && (
+                <div className="space-y-3">
+                  {extractedDocResult.tamperIndicators.length === 0 ? (
+                    <div className="p-6 bg-emerald-50 border border-emerald-200 rounded-[6px] text-center space-y-2">
+                      <ShieldCheck className="w-10 h-10 text-[#1E7B34] mx-auto" />
+                      <h4 className="font-bold text-[#1E7B34] text-sm">
+                        Zero Structural Anomalies Detected
+                      </h4>
+                      <p className="text-xs text-slate-600 max-w-md mx-auto">
+                        PDF structure is clean. Single-pass xref trailer dictionary, coherent creation metadata, and no post-signature byte revisions detected.
+                      </p>
+                    </div>
+                  ) : (
+                    extractedDocResult.tamperIndicators.map((t: any, i: number) => (
+                      <div
+                        key={i}
+                        className="p-4 bg-rose-50 border border-rose-200 rounded-[6px] space-y-2 text-xs"
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-[#B42318] uppercase tracking-wide flex items-center space-x-1.5">
+                            <ShieldAlert className="w-4 h-4 text-[#B42318]" />
+                            <span>Signal: {t.signal}</span>
+                          </span>
+                          <span className="bg-rose-600 text-white font-bold px-2 py-0.5 rounded text-[10px] uppercase">
+                            {t.severity} Severity
+                          </span>
+                        </div>
+                        <p className="font-bold text-slate-900">{t.reason}</p>
+                        <p className="text-slate-700 bg-white/70 p-2 rounded border border-rose-100 font-mono text-[11px]">
+                          {t.evidence_detail}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {/* TAB 4: Raw Text Stream */}
+              {activeResultTab === 'text' && (
+                <div className="space-y-2">
+                  <div className="text-[11px] text-slate-500 flex justify-between items-center">
+                    <span>Parsed via Node.js PDFParse text-layer stream</span>
+                    <span>{extractedDocResult.rawTextPreview.length} characters preview</span>
+                  </div>
+                  <pre className="p-4 bg-slate-900 text-emerald-400 font-mono text-[11px] rounded-[6px] overflow-x-auto whitespace-pre-wrap max-h-72">
+                    {extractedDocResult.rawTextPreview || '(No text layer detected)'}
+                  </pre>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-slate-50 px-5 py-3 border-t border-slate-200 flex justify-between items-center shrink-0">
+              <span className="text-xs text-slate-500 font-medium">
+                Cryptographically logged into Azure PostgreSQL audit trail
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsExtractionModalOpen(false)}
+                className="px-4 py-2 bg-[#0B2E5C] hover:bg-[#1D4E9E] text-white text-xs font-bold rounded-[4px] transition-colors"
+              >
+                Accept &amp; Close Dossier
+              </button>
             </div>
           </div>
         </div>

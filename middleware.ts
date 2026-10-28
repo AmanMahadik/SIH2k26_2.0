@@ -13,16 +13,16 @@ export function middleware(request: NextRequest) {
   // 2. Read role from cookie
   const roleCookie = request.cookies.get('nirikshai_role')?.value;
 
-  // 3. Define protected role routes
-  const roleProtectedRoutes: Record<string, string> = {
-    '/institution': 'institution',
-    '/officer': 'officer',
-    '/senior': 'senior',
-    '/admin': 'admin',
-    '/auditor': 'auditor',
+  // 3. Define protected role routes and authorized clearance levels
+  const roleProtectedRoutes: Record<string, string[]> = {
+    '/institution': ['institution', 'admin'],
+    '/officer': ['officer', 'senior', 'admin'],
+    '/senior': ['senior', 'admin'],
+    '/admin': ['admin'],
+    '/auditor': ['auditor', 'admin'],
   };
 
-  for (const [routePrefix, requiredRole] of Object.entries(roleProtectedRoutes)) {
+  for (const [routePrefix, allowedRoles] of Object.entries(roleProtectedRoutes)) {
     if (pathname.startsWith(routePrefix)) {
       // If not logged in, redirect to login
       if (!roleCookie) {
@@ -32,7 +32,7 @@ export function middleware(request: NextRequest) {
       }
 
       // If logged in with mismatched role, show formal 403 page
-      if (roleCookie !== requiredRole) {
+      if (!allowedRoles.includes(roleCookie)) {
         return NextResponse.redirect(new URL('/403', request.url));
       }
     }
