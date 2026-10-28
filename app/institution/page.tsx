@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import GovLayout from '@/components/gov/GovLayout';
+import { getClientAuthUser, setClientAuthCookie } from '@/lib/mock-auth';
 import {
   Building2,
   AlertCircle,
@@ -47,15 +48,15 @@ export default function InstitutionDashboardPage() {
   const [isDeficienciesModalOpen, setIsDeficienciesModalOpen] = useState(false);
   const [profileSavedMsg, setProfileSavedMsg] = useState(false);
 
-  // Institution Profile State
+  // Institution Profile State (Real-Time from Azure Database)
   const [profileData, setProfileData] = useState({
-    name: "SCTR'S PUNE INSTITUTE OF COMPUTER TECHNOLOGY",
-    aicteId: '1-5592509',
+    name: 'MIT ACADEMY OF ENGINEERING',
+    aicteId: '1-23111191',
     affiliation: 'Savitribai Phule Pune University',
-    established: '1983',
-    principal: 'Dr. P. T. Kulkarni',
-    email: 'principal@pict.edu',
-    phone: '+91 20 2437 1101',
+    established: '1999',
+    principal: 'Dr. R. M. Jalnekar',
+    email: 'principal@mitaoe.ac.in',
+    phone: '+91 20 3025 3500',
     landArea: '18.5 Acres (Barrier-free compliant)',
   });
 
@@ -73,13 +74,13 @@ export default function InstitutionDashboardPage() {
   const [wizardForm, setWizardForm] = useState({
     academicYear: '2026-27',
     category: 'EOA_EXISTING',
-    aicteId: '1-5592509',
-    institutionName: "SCTR'S PUNE INSTITUTE OF COMPUTER TECHNOLOGY",
+    aicteId: '1-23111191',
+    institutionName: 'MIT ACADEMY OF ENGINEERING',
     state: 'Maharashtra',
     university: 'Savitribai Phule Pune University',
-    principal: 'Dr. P. T. Kulkarni',
-    contactEmail: 'principal@pict.edu',
-    contactPhone: '+91 20 2437 1101',
+    principal: 'Dr. R. M. Jalnekar',
+    contactEmail: 'principal@mitaoe.ac.in',
+    contactPhone: '+91 20 3025 3500',
     approvedIntakeMaster: '240',
     claimedIntake: '300',
     declarationAgreed: true,
@@ -244,6 +245,18 @@ export default function InstitutionDashboardPage() {
             institutionName: first.name,
             university: first.university || prev.university,
           }));
+
+          // Synchronize client auth session so GovHeader displays the exact Azure DB institution
+          const currentAuth = getClientAuthUser();
+          if (currentAuth && currentAuth.role === 'institution') {
+            const syncedUser = {
+              ...currentAuth,
+              name: first.name,
+              subText: `(AICTE ID: ${first.aicte_id})`,
+            };
+            setClientAuthCookie(syncedUser);
+            window.dispatchEvent(new Event('auth_user_updated'));
+          }
         }
       })
       .catch((err) => console.error('Error fetching institution profile:', err));
@@ -454,8 +467,34 @@ export default function InstitutionDashboardPage() {
     }
   };
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    try {
+      await fetch('/api/institutions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: profileData.name,
+          aicte_id: profileData.aicteId,
+          state: 'Maharashtra',
+          university: profileData.affiliation,
+        }),
+      });
+    } catch (err) {
+      console.error('Error saving institution profile to Azure DB:', err);
+    }
+
+    const currentAuth = getClientAuthUser();
+    if (currentAuth && currentAuth.role === 'institution') {
+      const syncedUser = {
+        ...currentAuth,
+        name: profileData.name,
+        subText: `(AICTE ID: ${profileData.aicteId})`,
+      };
+      setClientAuthCookie(syncedUser);
+      window.dispatchEvent(new Event('auth_user_updated'));
+    }
+
     setProfileSavedMsg(true);
     setTimeout(() => {
       setProfileSavedMsg(false);
@@ -466,7 +505,15 @@ export default function InstitutionDashboardPage() {
   const uploadedDocsCount = Object.values(docsState).filter((d) => d.status === 'uploaded').length;
 
   return (
-    <GovLayout role="institution" activeTab={activeTab} onTabChange={setActiveTab}>
+    <GovLayout
+      role="institution"
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+      userOverride={{
+        name: profileData.name,
+        subText: `(AICTE ID: ${profileData.aicteId})`,
+      }}
+    >
       <div className="space-y-6">
         {/* ========================================================================= */}
         {/* VIEW A: INTERACTIVE OFFICIAL GOVERNMENT FILING WIZARD                    */}

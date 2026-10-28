@@ -59,7 +59,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
 
@@ -79,13 +79,25 @@ export default function LoginPage() {
       return;
     }
 
-    // 3. Match Target Role User
-    const targetUser = DEMO_USERS[selectedRole];
+    // 3. Match Target Role User (Syncing real-time from Azure DB if institution)
+    let targetUser = { ...DEMO_USERS[selectedRole] };
     if (!targetUser) {
       setErrorMsg('Invalid credentials or role');
       triggerCaptchaRefresh();
       setCaptchaInput('');
       return;
+    }
+
+    if (selectedRole === 'institution') {
+      try {
+        const instRes = await fetch('/api/institutions');
+        const instJson = await instRes.json();
+        if (instJson.success && Array.isArray(instJson.data) && instJson.data.length > 0) {
+          const activeInst = instJson.data[0];
+          targetUser.name = activeInst.name;
+          targetUser.subText = `(AICTE ID: ${activeInst.aicte_id})`;
+        }
+      } catch (err) {}
     }
 
     // Successfully log in & redirect

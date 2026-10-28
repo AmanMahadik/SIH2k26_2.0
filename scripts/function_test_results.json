@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-28T14:27:18.776Z",
+  "timestamp": "2026-10-28T15:07:02.310Z",
   "total": 23,
   "passed": 23,
   "failed": 0,
@@ -13,7 +13,7 @@
       "output": "{\"a\":2,\"m\":{\"b\":20,\"y\":10},\"z\":1}",
       "expected": "{\"a\":2,\"m\":{\"b\":20,\"y\":10},\"z\":1}",
       "passed": true,
-      "durationMs": "0.149",
+      "durationMs": "0.292",
       "notes": "Strict alphabetical key sort prevents false tamper alerts"
     },
     {
@@ -24,7 +24,7 @@
       "output": "32f451ac700c5d20376d6c100ae213a240ca45684893fbbcffe686b82218c87e",
       "expected": "64-character lowercase hex string",
       "passed": true,
-      "durationMs": "0.174",
+      "durationMs": "0.322",
       "notes": "Digest: 32f451ac700c5d20376d..."
     },
     {
@@ -35,7 +35,7 @@
       "output": "{\"valid\":true}",
       "expected": "{\"valid\":true}",
       "passed": true,
-      "durationMs": "0.315",
+      "durationMs": "0.463",
       "notes": "Chain passed complete backward-linkage and payload validation"
     },
     {
@@ -46,7 +46,7 @@
       "output": "{\"valid\":false,\"brokenIndex\":2,\"brokenEventId\":3,\"expectedHash\":\"6ed1496d81832442996c88b578608fb8745e5e54a9f5e4aa0a6aa10a6243bc06\",\"actualHash\":\"663beca4c97acddbe18abd7a88fbfa7ad61087ca4eb8a7322e7016e1ebd07553\",\"error\":\"Payload tampering detected at event #3: block hash does not match computed digest.\"}",
       "expected": "{\"valid\":false,\"brokenEventId\":3}",
       "passed": true,
-      "durationMs": "0.143",
+      "durationMs": "0.154",
       "notes": "Alert: \"Payload tampering detected at event #3: block hash does not match computed digest.\""
     },
     {
@@ -57,7 +57,7 @@
       "output": "1",
       "expected": "1",
       "passed": true,
-      "durationMs": "0.143",
+      "durationMs": "0.162",
       "notes": "Case-insensitive whitespace-trimmed exact equality"
     },
     {
@@ -68,7 +68,7 @@
       "output": "0.84",
       "expected": ">= 0.80",
       "passed": true,
-      "durationMs": "0.159",
+      "durationMs": "0.183",
       "notes": "Similarity: 84.0%"
     },
     {
@@ -79,7 +79,7 @@
       "output": "0.152",
       "expected": "< 0.35",
       "passed": true,
-      "durationMs": "0.150",
+      "durationMs": "0.347",
       "notes": "Confirmed distinct: 15.2%"
     },
     {
@@ -90,7 +90,7 @@
       "output": "{\"findingsCount\":1,\"severity\":\"blocking\"}",
       "expected": "{\"findingsCount\":1,\"severity\":\"blocking\"}",
       "passed": true,
-      "durationMs": "1.061",
+      "durationMs": "1.178",
       "notes": "Cited Statutory Clause: APH 2024-27 §4.1.2"
     },
     {
@@ -101,7 +101,7 @@
       "output": "{\"kind\":\"expired\",\"severity\":\"blocking\"}",
       "expected": "{\"kind\":\"expired\",\"severity\":\"blocking\"}",
       "passed": true,
-      "durationMs": "0.173",
+      "durationMs": "0.229",
       "notes": "Deficiency text: \"Document expired: noc_state expired on 2025-12-31, prior to Academic Year 2026-27.\""
     },
     {
@@ -112,7 +112,7 @@
       "output": "{\"kind\":\"inconsistent\",\"severity\":\"blocking\"}",
       "expected": "{\"kind\":\"inconsistent\",\"severity\":\"blocking\"}",
       "passed": true,
-      "durationMs": "0.185",
+      "durationMs": "0.204",
       "notes": "Cross-doc comparison: \"Apex Technical Institute\" vs \"Apex Polytechnic Society\""
     },
     {
@@ -123,7 +123,7 @@
       "output": "{\"kind\":\"record_mismatch\",\"severity\":\"blocking\"}",
       "expected": "{\"kind\":\"record_mismatch\",\"severity\":\"blocking\"}",
       "passed": true,
-      "durationMs": "0.071",
+      "durationMs": "0.096",
       "notes": "Violation message: \"Official record discrepancy: submitted intake_quota (360) does not match authorized AICTE record (300).\""
     },
     {
@@ -134,7 +134,7 @@
       "output": "{\"allSupported\":true,\"allUnsupported\":true}",
       "expected": "{\"allSupported\":true,\"allUnsupported\":true}",
       "passed": true,
-      "durationMs": "0.052",
+      "durationMs": "0.056",
       "notes": "Covers DigiLocker, State DTE, and University affiliation documents"
     },
     {
@@ -145,7 +145,7 @@
       "output": "{\"status\":\"verified\",\"matchAll\":true}",
       "expected": "{\"status\":\"verified\",\"matchAll\":true}",
       "passed": true,
-      "durationMs": "0.176",
+      "durationMs": "0.423",
       "notes": "Verification Notes: \"Cryptographically verified with issuing registry.\""
     },
     {
@@ -156,7 +156,7 @@
       "output": "{\"status\":\"source_unavailable\",\"isTimeout\":true}",
       "expected": "{\"status\":\"source_unavailable\",\"isTimeout\":true}",
       "passed": true,
-      "durationMs": "0.039",
+      "durationMs": "0.049",
       "notes": "Enables graceful failover without crashing scrutinizer pipeline"
     },
     {
@@ -167,7 +167,7 @@
       "output": "{\"t1\":\"verified\",\"t2\":\"manual_review_required\",\"t3\":\"verified\"}",
       "expected": "{\"t1\":\"verified\",\"t2\":\"manual_review_required\",\"t3\":\"verified\"}",
       "passed": true,
-      "durationMs": "0.049",
+      "durationMs": "0.056",
       "notes": "Guarantees conclusive classification under SIH Requirement R6"
     },
     {
@@ -178,7 +178,7 @@
       "output": "A & M INSTITUTE OF COMPUTER & TECHNOLOGY",
       "expected": "A & M INSTITUTE OF COMPUTER & TECHNOLOGY",
       "passed": true,
-      "durationMs": "0.062",
+      "durationMs": "0.068",
       "notes": "Found: A & M INSTITUTE OF COMPUTER & TECHNOLOGY (State: Maharashtra, University: Dr. Babasaheb Ambedkar Technological University (DBATU))"
     },
     {
@@ -189,7 +189,7 @@
       "output": "1-10575231",
       "expected": "1-10575231",
       "passed": true,
-      "durationMs": "0.031",
+      "durationMs": "0.019",
       "notes": "Input normalization guarantees zero lookup drops"
     },
     {
@@ -200,7 +200,7 @@
       "output": "Count: 5, Sample: ALL INDIA SHRI SHIVAJI MEMORIAL SOCIETY'S COLLEGE OF ENGINEERING, PUNE-1",
       "expected": "Count >= 1 with matching keyword",
       "passed": true,
-      "durationMs": "0.283",
+      "durationMs": "0.311",
       "notes": "Top Match: ALL INDIA SHRI SHIVAJI MEMORIAL SOCIETY'S COLLEGE OF ENGINEERING, PUNE-1"
     },
     {
@@ -211,7 +211,7 @@
       "output": "{\"allPresent\":true,\"clearanceChecks\":true}",
       "expected": "{\"allPresent\":true,\"clearanceChecks\":true}",
       "passed": true,
-      "durationMs": "0.113",
+      "durationMs": "0.061",
       "notes": "Covers Institution, Scrutiny Officer, Senior Committee, Admin, Auditor"
     },
     {
@@ -222,7 +222,7 @@
       "output": "fe22a78edbd3c54e975cf9660d07ba2d77826a26108cfd397b36677c1cb67edf",
       "expected": "64-character SHA-256 hex digest",
       "passed": true,
-      "durationMs": "0.047",
+      "durationMs": "0.059",
       "notes": "Seal: fe22a78edbd3c54e975cf966..."
     },
     {
@@ -233,7 +233,7 @@
       "output": "{\"latOk\":true,\"lonOk\":true,\"accOk\":true}",
       "expected": "{\"latOk\":true,\"lonOk\":true,\"accOk\":true}",
       "passed": true,
-      "durationMs": "0.030",
+      "durationMs": "0.032",
       "notes": "PICT Pune Campus: 18.4575° N, 73.8508° E (High accuracy 2.1m)"
     },
     {
@@ -244,7 +244,7 @@
       "output": "resolved",
       "expected": "resolved",
       "passed": true,
-      "durationMs": "0.034",
+      "durationMs": "0.036",
       "notes": "Status transitions seamlessly to Under Committee Review"
     },
     {

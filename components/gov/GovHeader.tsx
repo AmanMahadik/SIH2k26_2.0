@@ -167,8 +167,19 @@ export default function GovHeader({ forcedUser, showTricolour = false }: GovHead
     router.push('/login');
   };
 
-  const handleSwitchPersona = (targetRole: GovRole) => {
-    const target = DEMO_USERS[targetRole];
+  const handleSwitchPersona = async (targetRole: GovRole) => {
+    const target = { ...DEMO_USERS[targetRole] };
+    if (targetRole === 'institution') {
+      try {
+        const res = await fetch('/api/institutions');
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          const activeInst = json.data[0];
+          target.name = activeInst.name;
+          target.subText = `(AICTE ID: ${activeInst.aicte_id})`;
+        }
+      } catch (e) {}
+    }
     if (target) {
       setClientAuthCookie(target);
       setUser(target);

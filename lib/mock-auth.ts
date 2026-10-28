@@ -15,11 +15,11 @@ export interface GovUser {
 
 export const DEMO_USERS: Record<GovRole, GovUser> = {
   institution: {
-    id: 'AICTE-12345',
-    name: 'ABC Engineering College',
-    subText: '(AICTE ID: 1-10972348121)',
-    email: 'principal@pict.edu',
-    phone: '+91 20 2437 1101',
+    id: 'AICTE-1-23111191',
+    name: 'MIT ACADEMY OF ENGINEERING',
+    subText: '(AICTE ID: 1-23111191)',
+    email: 'principal@mitaoe.ac.in',
+    phone: '+91 20 3025 3500',
     department: 'Department of Technical Education, Pune',
     role: 'institution',
     redirectUrl: '/institution',
