@@ -90,9 +90,9 @@ export default function FormalReportPage() {
           <div className="text-center space-y-2 border-b-2 border-slate-900 pb-5">
             <div className="flex justify-center pb-1">
               <img
-                src="/nirikshai_logo.jpg"
-                alt="NirikshAI Official AICTE Regulation Bureau"
-                className="h-16 sm:h-20 w-auto object-contain"
+                src="/nirikshai_emblem.png"
+                alt="NirikshAI Official AICTE Regulation Bureau Seal"
+                className="h-20 sm:h-24 w-auto object-contain"
               />
             </div>
             <p className="text-[11px] font-semibold tracking-wider text-slate-600 uppercase">

@@ -56,18 +56,23 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       >
         {/* Main Floating Auth Card */}
         <View style={[styles.card, SHADOWS.card]}>
-          {/* Official AICTE NirikshAI Banner Logo */}
-          <View style={styles.logoBannerContainer}>
+          {/* Official AICTE NirikshAI Circular Seal */}
+          <View style={styles.emblemContainer}>
             <Image
-              source={require('../../assets/nirikshai_banner_logo.png')}
-              style={styles.logoBannerImage}
+              source={require('../../assets/nirikshai_emblem.png')}
+              style={styles.emblemImage}
               resizeMode="contain"
             />
           </View>
 
+          <Text style={styles.portalTitle}>
+            <Text style={{ color: '#8B1A1A' }}>Niriksh</Text>
+            <Text style={{ color: '#0B2E5C' }}>AI</Text>
+          </Text>
+
           {/* Subtitle */}
           <Text style={styles.portalSubtitle}>
-            Official AICTE Scrutiny &amp; EVC Field Inspection Portal
+            AICTE Regulatory Scrutiny &amp; EVC Field Inspection Bureau
           </Text>
 
           {/* Auth Gate Security Badge */}
@@ -283,21 +288,27 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
     alignItems: 'center',
   },
-  logoBannerContainer: {
-    width: '100%',
-    height: 70,
+  emblemContainer: {
+    width: 80,
+    height: 80,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
-  logoBannerImage: {
-    width: '100%',
-    height: '100%',
+  emblemImage: {
+    width: 80,
+    height: 80,
+  },
+  portalTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+    textAlign: 'center',
   },
   portalSubtitle: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '700',
-    color: COLORS.primaryOrange,
+    color: '#D97706',
     marginTop: 2,
     marginBottom: 10,
     textAlign: 'center',

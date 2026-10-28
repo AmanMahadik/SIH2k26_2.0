@@ -114,15 +114,26 @@ export default function LoginPage() {
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start relative z-10">
           {/* Left Column: Welcome, Explanations, Advisory Pill */}
           <div className="lg:col-span-6 xl:col-span-7 space-y-5 pt-3 lg:pt-6 pr-0 lg:pr-6">
-            <div className="inline-block bg-white p-1 rounded-lg border border-slate-200 shadow-xs">
+            <div className="flex items-center space-x-4">
               <img
-                src="/nirikshai_logo.jpg"
-                alt="NirikshAI Official Logo"
-                className="h-14 sm:h-16 w-auto object-contain rounded"
+                src="/nirikshai_emblem.png"
+                alt="NirikshAI Official AICTE Seal"
+                className="h-16 w-16 sm:h-20 sm:w-20 object-contain drop-shadow-sm hover:scale-105 transition-transform"
               />
+              <div className="flex flex-col">
+                <span className="text-[10px] sm:text-[11px] font-extrabold text-[#0B2E5C] tracking-wider uppercase">
+                  All India Council for Technical Education
+                </span>
+                <span className="text-2xl sm:text-3xl font-black text-[#0B2E5C] tracking-tight leading-none my-1">
+                  <span className="text-[#8B1A1A]">Niriksh</span><span>AI</span>
+                </span>
+                <span className="text-[10px] sm:text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 w-fit">
+                  Regulatory Scrutiny Bureau
+                </span>
+              </div>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#0B2E5C] tracking-tight">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#0B2E5C] tracking-tight">
               Welcome to NirikshAI
             </h1>
 

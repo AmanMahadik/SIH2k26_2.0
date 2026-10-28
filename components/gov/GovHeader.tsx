@@ -181,13 +181,27 @@ export default function GovHeader({ forcedUser, showTricolour = false }: GovHead
     <div className="w-full bg-white border-b border-gov-border select-none">
       {/* 1. Main Header Strip */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between">
-        {/* Left: Official App Logo Banner */}
-        <Link href={user ? user.redirectUrl : '/login'} className="flex items-center py-0.5 group">
+        {/* Left: Official App Logo & Emblem */}
+        <Link href={user ? user.redirectUrl : '/login'} className="flex items-center space-x-2.5 sm:space-x-3 py-0.5 group">
           <img
-            src="/nirikshai_logo.jpg"
-            alt="NirikshAI - Application Validation & Compliance Verification | AICTE Regulation Bureau"
-            className="h-10 sm:h-12 md:h-13 w-auto object-contain hover:opacity-95 transition-opacity"
+            src="/nirikshai_emblem.png"
+            alt="AICTE NirikshAI Seal"
+            className="h-10 w-10 sm:h-12 sm:w-12 object-contain hover:scale-105 transition-transform"
           />
+          <div className="flex flex-col justify-center">
+            <span className="text-[9px] sm:text-[10px] font-extrabold text-[#0B2E5C] tracking-wider uppercase leading-none">
+              All India Council for Technical Education
+            </span>
+            <span className="text-base sm:text-lg font-black text-[#0B2E5C] leading-tight tracking-tight flex items-center mt-0.5">
+              <span className="text-[#8B1A1A]">Niriksh</span><span>AI</span>
+              <span className="ml-2 text-[9px] sm:text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                Regulation Bureau
+              </span>
+            </span>
+            <span className="text-[8.5px] sm:text-[9.5px] text-[#5B6574] font-medium hidden md:inline leading-none mt-0.5">
+              Application Validation &amp; Regulatory Compliance Verification
+            </span>
+          </div>
         </Link>
 
         {/* Right side: Authenticated User Controls */}
