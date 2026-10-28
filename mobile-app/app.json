@@ -35,11 +35,6 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "nirikshai-sih2026-evc"
-      }
     }
   }
 }
