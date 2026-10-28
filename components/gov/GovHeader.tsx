@@ -28,6 +28,7 @@ import {
   BarChart3,
   Database,
   Layers,
+  Smartphone,
 } from 'lucide-react';
 import { getClientAuthUser, setClientAuthCookie, clearClientAuthCookie, GovUser, GovRole, DEMO_USERS } from '@/lib/mock-auth';
 
@@ -49,6 +50,7 @@ const MODULE_LINKS = [
   { label: 'Rule Engine', path: '/rules', icon: BookOpen },
   { label: 'Metrics (R13)', path: '/metrics', icon: BarChart3 },
   { label: 'Audit Chain', path: '/audit', icon: Database },
+  { label: 'Mobile App', path: '/mobile', icon: Smartphone },
 ];
 
 export default function GovHeader({ forcedUser, showTricolour = false }: GovHeaderProps) {
