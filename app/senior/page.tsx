@@ -356,9 +356,9 @@ export default function SeniorOfficerDashboardPage() {
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 3: ANALYTICS                                                          */}
+        {/* TAB 3: REPORTS & ANALYTICS                                                */}
         {/* ========================================================================= */}
-        {activeTab === 'analytics' && (
+        {activeTab === 'reports' && (
           <div className="bg-white rounded-[6px] border border-[#D0D7E2] p-6 shadow-xs space-y-6">
             <div className="flex justify-between items-center border-b border-slate-100 pb-4">
               <div>
@@ -389,6 +389,65 @@ export default function SeniorOfficerDashboardPage() {
                 <span className="text-xs font-semibold text-slate-500">Database Consistency</span>
                 <p className="text-2xl font-extrabold text-[#1E7B34] mt-1">100%</p>
                 <p className="text-[11px] text-slate-500 mt-1">SHA-256 Hash Chain Verified</p>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-100 flex justify-between items-center text-xs">
+              <span className="text-slate-500 font-medium">Detailed forensic reports available in Scrutiny Bureau:</span>
+              <div className="flex space-x-3">
+                <Link href="/tamper" className="text-[#0B57D0] font-bold hover:underline">
+                  Tamper Triage (M5) &rarr;
+                </Link>
+                <Link href="/metrics" className="text-[#1E7B34] font-bold hover:underline">
+                  Empirical Evaluation &rarr;
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 4: COMMITTEE POWERS & HELP SOP                                        */}
+        {/* ========================================================================= */}
+        {activeTab === 'help' && (
+          <div className="bg-white rounded-[6px] border border-[#D0D7E2] p-6 shadow-xs space-y-6">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+              <div>
+                <h2 className="text-base font-bold text-[#0B2E5C]">Senior Scrutiny Committee – Statutory SOP &amp; Mandate</h2>
+                <p className="text-xs text-slate-500 mt-0.5">Regulatory review protocols under AICTE Act 1987 &amp; APH 2024–27.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab('home')}
+                className="text-xs font-bold text-[#0B57D0] hover:underline"
+              >
+                &larr; Back to Dashboard
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="p-4 bg-[#EEF3FA] rounded border border-[#BBD5F8] space-y-2">
+                <h3 className="font-bold text-[#0B2E5C] text-sm">Escalated Case Review Protocol</h3>
+                <p className="text-slate-700 leading-relaxed">
+                  Cases escalated from Regional Offices (WRO, NRO, SRO) containing conflicting NOC certificates or intake ceiling divergences are adjudicated exclusively by the Senior Scrutiny Committee.
+                </p>
+                <ul className="list-disc pl-4 space-y-1 text-slate-600">
+                  <li>Review OCR extracted evidence canvas side-by-side with statutory affidavits.</li>
+                  <li>Verify compliance with Section 10(k) of the AICTE Act.</li>
+                  <li>Grant conditional approval or issue statutory Show Cause Notice.</li>
+                </ul>
+              </div>
+
+              <div className="p-4 bg-[#E6F4EA] rounded border border-[#A6E9B9] space-y-2">
+                <h3 className="font-bold text-[#1E7B34] text-sm">Human Decision Invariance</h3>
+                <p className="text-slate-700 leading-relaxed">
+                  NirikshAI strictly functions as an algorithmic assistant. Every senior officer decision generates an immutable cryptographic signature appended to the SHA-256 audit ledger with actor, timestamp, and regulatory reason.
+                </p>
+                <div className="pt-2">
+                  <Link href="/audit" className="inline-flex items-center space-x-1 font-bold text-[#1E7B34] hover:underline">
+                    <span>Inspect Live Audit Trail &rarr;</span>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
