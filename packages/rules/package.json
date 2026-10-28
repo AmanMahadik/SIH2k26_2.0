@@ -1,0 +1,7 @@
+{
+  "name": "@nirikshai/rules",
+  "version": "1.0.0",
+  "description": "Versioned regulatory rule definitions encoded from AICTE Approval Process Handbook (APH)",
+  "main": "index.js",
+  "license": "Apache-2.0"
+}

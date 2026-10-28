@@ -1,0 +1,11 @@
+{
+  "name": "@nirikshai/rule-engine",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Deterministic AST Rule Evaluator mapped to AICTE APH 2024-27",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "test": "node --test"
+  }
+}

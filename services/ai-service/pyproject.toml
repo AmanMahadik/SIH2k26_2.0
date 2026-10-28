@@ -1,0 +1,19 @@
+[project]
+name = "nirikshai-ai-service"
+version = "2.0.0"
+description = "FastAPI OCR Perception & PDF Forensics Engine for AICTE Scrutiny"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.110.0",
+    "uvicorn>=0.28.0",
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.2.0",
+    "python-multipart>=0.0.9",
+    "pypdf>=4.0.0",
+    "paddleocr>=2.7.0; extra == 'gpu'"
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"

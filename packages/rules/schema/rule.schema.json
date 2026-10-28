@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AicteRuleSetDefinition",
+  "type": "object",
+  "required": ["category", "version", "source_ref", "rules"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "category": { "type": "string" },
+    "version": { "type": "integer" },
+    "source_ref": { "type": "string" },
+    "effective_date": { "type": "string", "format": "date" },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "clause", "description"],
+        "properties": {
+          "id": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": ["required_document", "date_valid_for_year", "cross_field_equal", "record_equals", "status_equals", "infra_threshold"]
+          },
+          "doc_type": { "type": "string" },
+          "field": { "type": "string" },
+          "fields": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "year": { "type": "string" },
+          "fuzzy": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+          "record": { "type": "string" },
+          "value": { "type": ["string", "number", "boolean"] },
+          "clause": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      }
+    }
+  }
+}

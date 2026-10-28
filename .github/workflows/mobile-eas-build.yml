@@ -1,0 +1,31 @@
+name: Mobile EAS Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Target Platform (android/ios/all)'
+        required: true
+        default: 'android'
+
+jobs:
+  build-apk:
+    name: Build Android APK via Expo EAS
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Verify Android Bundle Export
+        run: |
+          cd mobile-app
+          npm ci --legacy-peer-deps
+          npx expo export --platform android

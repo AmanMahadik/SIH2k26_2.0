@@ -1,0 +1,17 @@
+{
+  "name": "@nirikshai/shared-types",
+  "version": "1.0.0",
+  "description": "Shared TypeScript domain models and Zod schemas for NirikshAI platform",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": ["aicte", "nirikshai", "types"],
+  "author": "NirikshAI Team (SIH 2026)",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

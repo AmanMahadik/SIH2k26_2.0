@@ -1,0 +1,7 @@
+{
+  "name": "@nirikshai/config",
+  "version": "1.0.0",
+  "description": "Shared configurations for ESLint, TypeScript, and Tailwind across the monorepo",
+  "main": "index.js",
+  "license": "Apache-2.0"
+}

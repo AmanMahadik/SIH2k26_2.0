@@ -1,0 +1,14 @@
+{
+  "name": "@nirikshai/ledger",
+  "version": "1.0.0",
+  "description": "Tamper-evident SHA-256 hash-chained regulatory audit ledger (Section 65B Indian Evidence Act compliant)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "test": "npx tsx --test tests/ledger.test.ts"
+  },
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@nirikshai/shared-types": "workspace:*"
+  }
+}

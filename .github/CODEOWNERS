@@ -1,0 +1,7 @@
+# NirikshAI Core Codeowners (Team Code4Bharat)
+* @AmanMahadik
+/lib/rules/ @AmanMahadik
+/lib/audit/ @AmanMahadik
+/services/ @AmanMahadik
+/apps/ @AmanMahadik
+/mobile-app/ @AmanMahadik

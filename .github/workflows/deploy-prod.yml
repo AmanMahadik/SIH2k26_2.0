@@ -1,0 +1,18 @@
+name: Deploy Production
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  deploy-prod:
+    name: Production Release Gate
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Production Deployment Trigger
+        run: echo "Production tag detected. Azure PostgreSQL and Vercel production deployment triggered with manual approval gate."

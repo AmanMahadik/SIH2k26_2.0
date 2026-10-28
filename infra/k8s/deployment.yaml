@@ -1,0 +1,90 @@
+# infra/k8s/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nirikshai-web
+  labels:
+    app: nirikshai
+    tier: web
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nirikshai
+      tier: web
+  template:
+    metadata:
+      labels:
+        app: nirikshai
+        tier: web
+    spec:
+      containers:
+        - name: web
+          image: nirikshai/web:2.0.0
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: nirikshai-secrets
+                  key: database-url
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1024Mi"
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nirikshai-ai-service
+  labels:
+    app: nirikshai
+    tier: ai-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nirikshai
+      tier: ai-service
+  template:
+    metadata:
+      labels:
+        app: nirikshai
+        tier: ai-service
+    spec:
+      containers:
+        - name: ai-service
+          image: nirikshai/ai-service:2.0.0
+          ports:
+            - containerPort: 8000
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5

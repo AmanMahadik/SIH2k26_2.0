@@ -1,0 +1,17 @@
+{
+  "name": "@nirikshai/api-client",
+  "version": "1.0.0",
+  "description": "Typed client for NirikshAI AI microservice (PaddleOCR, PDF Forensics, Fuzzy Matching)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@nirikshai/shared-types": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

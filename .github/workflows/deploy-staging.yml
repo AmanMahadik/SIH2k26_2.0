@@ -1,0 +1,16 @@
+name: Deploy Staging
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-vercel-staging:
+    name: Deploy to Vercel Staging
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy Staging
+        run: echo "Vercel automatically synchronizes and deploys main branch to https://sih-2k26-2-0.vercel.app"

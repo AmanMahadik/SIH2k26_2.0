@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://nirikshai:nirikshai_secure_pass@postgres:5432/nirikshai_db?sslmode=disable
+      - AI_SERVICE_URL=http://ai-service:8000
+    depends_on:
+      - postgres
+      - ai-service
+    restart: always
+
+  ai-service:
+    build:
+      context: ../../services/ai-service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - PORT=8000
+    restart: always
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: nirikshai
+      POSTGRES_PASSWORD: nirikshai_secure_pass
+      POSTGRES_DB: nirikshai_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../../packages/db/migrations/001_initial_schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ../../packages/db/seeds/aicte_master_seed.sql:/docker-entrypoint-initdb.d/02-seeds.sql
+    restart: always
+
+volumes:
+  postgres_data:
