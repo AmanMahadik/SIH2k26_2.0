@@ -148,11 +148,14 @@ The platform is pre-configured with active database connectivity:
 
 ---
 
-## 📄 Documentation & Evaluation Reports
+## 📄 Documentation, Guides & Evaluation Reports
 
+- **[Testing Credentials & Scenarios Guide](./docs/guides/TESTING_CREDENTIALS_AND_GUIDE.md)**: Role logins, passwords, clear step-by-step evaluation flows.
+- **[SIH 2026 PPT Handover Guide (DOCX)](./docs/guides/NirikshAI_SIH2026_PPT_Handover_Guide.docx)**: Official submission presentation and handover script.
+- **[Publication-Ready PDF Report](./docs/reports/nirikshai_report.pdf)**: 36-page comprehensive project report with letterhead and diagrams.
+- **[Function Test Report (PDF)](./docs/reports/NirikshAI_Function_Workflows_and_Test_Report.pdf)**: 23-function test suite report with execution logs.
 - **[SIH Problem Statement Mapping](./docs/sih/sih-problem-statement-mapping.md)**: Direct traceability matrix to PS 26261 requirements.
 - **[System Architecture Overview](./docs/architecture/overview.md)**: C4 context and container diagrams.
 - **[Regulatory Data Flow](./docs/architecture/data-flow.md)**: End-to-end lifecycle sequence diagrams.
 - **[Threat Model & Defense](./docs/architecture/threat-model.md)**: STRIDE analysis for institutional data protection.
-- **[Function Test Report (PDF)](./docs/NirikshAI_Function_Workflows_and_Test_Report.pdf)**: 23-function test suite report with execution logs.
 - **[OpenAPI 3.0 Specification](./docs/api/openapi.yaml)**: Complete REST API documentation.
