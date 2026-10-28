@@ -12,7 +12,7 @@ jobs:
     environment: production
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Production Deployment Trigger
         run: echo "Production tag detected. Azure PostgreSQL and Vercel production deployment triggered with manual approval gate."
