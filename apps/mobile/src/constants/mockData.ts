@@ -12,6 +12,10 @@ export interface GeotaggedEvidence {
   sha256Hash: string;
   inspectorName: string;
   status: 'Verified & Sealed' | 'Pending AICTE Sync';
+  geofenceStatus?: 'COMPLIANT' | 'BREACH' | 'UNCERTAIN';
+  distanceMeters?: number;
+  labCode?: string;
+  radiusMeters?: number;
 }
 
 export interface ScannedDocument {
@@ -57,8 +61,8 @@ export const INITIAL_GEOTAGGED_PHOTOS: GeotaggedEvidence[] = [
     aicteId: '1-23111191',
     latitude: 18.675620,
     longitude: 73.896710,
-    accuracy: 1.8,
-    timestamp: '2026-10-31T09:15:30.000Z',
+    accuracy: 2.1,
+    timestamp: '2026-10-27T10:15:30.000Z',
     sha256Hash: '9a6b12a84358fa838d74883b4b84013481239840293482390481023948102394',
     inspectorName: 'Dr. Priya Sharma (EVC Lead)',
     status: 'Verified & Sealed',
@@ -68,10 +72,10 @@ export const INITIAL_GEOTAGGED_PHOTOS: GeotaggedEvidence[] = [
     category: 'Barrier-Free Wheelchair Ramp & Lift',
     campusName: 'MIT Academy of Engineering (MITAOE)',
     aicteId: '1-23111191',
-    latitude: 18.675380,
-    longitude: 73.896620,
-    accuracy: 1.6,
-    timestamp: '2026-10-31T09:30:15.000Z',
+    latitude: 18.675810,
+    longitude: 73.896920,
+    accuracy: 1.8,
+    timestamp: '2026-10-27T10:30:15.000Z',
     sha256Hash: 'f4b1c2d3e4a5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef',
     inspectorName: 'Dr. Priya Sharma (EVC Lead)',
     status: 'Verified & Sealed',
@@ -81,10 +85,10 @@ export const INITIAL_GEOTAGGED_PHOTOS: GeotaggedEvidence[] = [
     category: 'Mechanical Engineering Workshop',
     campusName: 'MIT Academy of Engineering (MITAOE)',
     aicteId: '1-23111191',
-    latitude: 18.675810,
-    longitude: 73.896920,
-    accuracy: 2.1,
-    timestamp: '2026-10-31T10:05:00.000Z',
+    latitude: 18.676010,
+    longitude: 73.896350,
+    accuracy: 2.4,
+    timestamp: '2026-10-27T11:05:00.000Z',
     sha256Hash: '8e7a6b5c4d3e2f1a0987654321fedcba987654321abcdef0123456789abcdef0',
     inspectorName: 'Dr. Priya Sharma (EVC Lead)',
     status: 'Verified & Sealed',

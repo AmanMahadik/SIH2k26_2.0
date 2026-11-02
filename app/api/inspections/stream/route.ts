@@ -2,32 +2,9 @@
 // Phase 5 & 6: Server-Sent Events (SSE) Stream for Real-Time EVC Inspections Feed
 
 import { NextRequest } from 'next/server';
+import { sseClients, SSEClient } from '@/lib/inspectionEvents';
 
 export const dynamic = 'force-dynamic';
-
-interface SSEClient {
-  id: string;
-  controller: ReadableStreamDefaultController;
-}
-
-// Global active SSE subscribers
-const clients = new Set<SSEClient>();
-
-export function broadcastInspectionEvent(event: {
-  type: 'NEW_CAPTURE' | 'DECISION_UPDATED' | 'CENTROID_CALIBRATED' | 'MOCK_DETECTED';
-  data: any;
-}) {
-  const message = `data: ${JSON.stringify({ ...event, broadcastAt: new Date().toISOString() })}\n\n`;
-  const encoded = new TextEncoder().encode(message);
-
-  for (const client of clients) {
-    try {
-      client.controller.enqueue(encoded);
-    } catch {
-      clients.delete(client);
-    }
-  }
-}
 
 export async function GET(req: NextRequest) {
   let currentClient: SSEClient;
@@ -38,7 +15,7 @@ export async function GET(req: NextRequest) {
         id: Math.random().toString(36).substring(2, 9),
         controller,
       };
-      clients.add(currentClient);
+      sseClients.add(currentClient);
 
       // Initial connection greeting
       controller.enqueue(
@@ -53,7 +30,7 @@ export async function GET(req: NextRequest) {
     },
     cancel() {
       if (currentClient) {
-        clients.delete(currentClient);
+        sseClients.delete(currentClient);
       }
     },
   });

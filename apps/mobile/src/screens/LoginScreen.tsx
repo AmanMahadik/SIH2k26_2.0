@@ -116,19 +116,19 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={() => setRoleDemo('principal@pict.edu')}
+                onPress={() => setRoleDemo('principal@mitaoe.ac.in')}
                 style={[
                   styles.rolePill,
-                  email === 'principal@pict.edu' && styles.rolePillActive,
+                  email === 'principal@mitaoe.ac.in' && styles.rolePillActive,
                 ]}
               >
                 <Text
                   style={[
                     styles.rolePillText,
-                    email === 'principal@pict.edu' && styles.rolePillTextActive,
+                    email === 'principal@mitaoe.ac.in' && styles.rolePillTextActive,
                   ]}
                 >
-                  College Registrar
+                  MITAOE College
                 </Text>
               </TouchableOpacity>
 

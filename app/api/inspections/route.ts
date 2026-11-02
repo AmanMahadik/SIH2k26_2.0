@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import crypto from 'crypto';
 import { query } from '@/lib/db';
-import { broadcastInspectionEvent } from './stream/route';
+import { broadcastInspectionEvent } from '@/lib/inspectionEvents';
 
 export const dynamic = 'force-dynamic';
 
