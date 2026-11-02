@@ -22,6 +22,7 @@ import { LocationPermissionExplainer } from '../components/LocationPermissionExp
 import { LocationState } from '../types/location';
 import * as Haptics from 'expo-haptics';
 import { LiveGeofenceMap, GeofenceVisualStatus } from '../components/LiveGeofenceMap';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { FullScreenCaptureScreen } from './FullScreenCaptureScreen';
 import { CaptureRecord } from '../services/captureQueue';
 
@@ -731,19 +732,21 @@ export const FieldInspectionScreen: React.FC = () => {
 
         {/* Live Geofence Map Component (Phase 2) */}
         <View style={{ marginBottom: 12 }}>
-          <LiveGeofenceMap
-            userLat={currentLat}
-            userLng={currentLng}
-            accuracy={currentAccuracy}
-            labCentroid={targetCentroid}
-            labRadiusMeters={activeLab.radiusMeters}
-            labName={activeLab.name}
-            labCode={activeLab.code}
-            status={geofenceStatus}
-            distanceMeters={currentDistance}
-            height={180}
-            isMocked={isMocked}
-          />
+          <ErrorBoundary fallbackTitle="Tactical Geodetic Radar">
+            <LiveGeofenceMap
+              userLat={currentLat}
+              userLng={currentLng}
+              accuracy={currentAccuracy}
+              labCentroid={targetCentroid}
+              labRadiusMeters={activeLab.radiusMeters}
+              labName={activeLab.name}
+              labCode={activeLab.code}
+              status={geofenceStatus}
+              distanceMeters={currentDistance}
+              height={190}
+              isMocked={isMocked}
+            />
+          </ErrorBoundary>
         </View>
 
         {/* Live Camera Viewfinder & Visual Geofence Radar */}
