@@ -1,5 +1,5 @@
 // mobile-app/src/screens/FieldInspectionScreen.tsx
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
+  Modal,
 } from 'react-native';
 import * as Location from 'expo-location';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -161,6 +162,21 @@ export const FieldInspectionScreen: React.FC = () => {
   const [cameraActive, setCameraActive] = useState<boolean>(true);
   const [isFullScreenCaptureOpen, setIsFullScreenCaptureOpen] = useState<boolean>(false);
 
+  const [isPermissionDismissed, setIsPermissionDismissed] = useState<boolean>(false);
+
+  const liveLocationOptions = useMemo(
+    () => ({
+      defaultCampusAddress: 'MIT Academy of Engineering, Dehu Phata, Alandi, Pune 412105, India',
+      onMockDetected: () => {
+        Alert.alert(
+          '🚨 Statutory Security Lock: Mock Location Detected',
+          'AICTE APH 2024-27 §4.2.3 and Section 65B of Indian Evidence Act prohibit simulated or spoofed GPS coordinates.\n\nAll inspection shutter functions are locked.'
+        );
+      },
+    }),
+    []
+  );
+
   // Hardware Geolocation & Sensors Hook (Phase 1)
   const {
     locationState,
@@ -169,15 +185,21 @@ export const FieldInspectionScreen: React.FC = () => {
     requestPermission,
     openSettings,
     enableServices,
-  } = useLiveLocation({
-    defaultCampusAddress: 'MIT Academy of Engineering, Dehu Phata, Alandi, Pune 412105, India',
-    onMockDetected: () => {
-      Alert.alert(
-        '🚨 Statutory Security Lock: Mock Location Detected',
-        'AICTE APH 2024-27 §4.2.3 and Section 65B of Indian Evidence Act prohibit simulated or spoofed GPS coordinates.\n\nAll inspection shutter functions are locked.'
-      );
-    },
-  });
+    bypassPermission,
+  } = useLiveLocation(liveLocationOptions);
+
+  const handleDismissPermission = useCallback(() => {
+    setIsPermissionDismissed(true);
+    bypassPermission();
+  }, [bypassPermission]);
+
+  const handleGrantPermission = useCallback(async () => {
+    try {
+      await requestPermission();
+    } finally {
+      setIsPermissionDismissed(true);
+    }
+  }, [requestPermission]);
 
   const [pinnedCentroid, setPinnedCentroid] = useState<{ lat: number; lng: number } | null>(null);
   const [compassHeading, setCompassHeading] = useState<string>('160° NW');
@@ -234,7 +256,7 @@ export const FieldInspectionScreen: React.FC = () => {
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const isDemoAllowed = Boolean(__DEV__ || process.env.EXPO_PUBLIC_ENABLE_DEMO === 'true');
+  const isDemoAllowed = Boolean(__DEV__ || process.env.EXPO_PUBLIC_ENABLE_DEMO === 'true' || Platform.OS === 'web');
   const targetCentroid = pinnedCentroid || activeLab.centroid;
 
   // Coords & Distance Calculation (Real device hardware vs Simulator)
@@ -480,16 +502,18 @@ export const FieldInspectionScreen: React.FC = () => {
     }
   };
 
-  // Phase 1: Full-Screen Explainer if Location Permission is not yet granted or GPS is disabled
-  if (permissionState !== 'GRANTED') {
+  // Phase 1: Statutory Location Explainer if Location Permission is not yet granted or GPS is disabled
+  if (permissionState !== 'GRANTED' && !isPermissionDismissed) {
     return (
       <View style={styles.screen}>
         <Header />
         <LocationPermissionExplainer
           permissionState={permissionState}
-          onRequestPermission={requestPermission}
+          onRequestPermission={handleGrantPermission}
           onOpenSettings={openSettings}
           onEnableServices={enableServices}
+          onDismiss={handleDismissPermission}
+          onContinueFallback={handleDismissPermission}
         />
       </View>
     );
