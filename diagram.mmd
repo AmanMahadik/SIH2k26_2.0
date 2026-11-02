@@ -1,0 +1,10 @@
+flowchart TD
+    A[Start Inspection] --> B[Check Geofence]
+    B -->|Inside| C[Capture Photo]
+    B -->|Outside| D[Block Inspection]
+    C --> E[Compute SHA-256]
+    E --> F[Enqueue to SQLite]
+    F --> G[Sync to Server]
+    G --> H[Server Validation & Store]
+    H --> I[Admin Portal Display]
+    I --> J[Audit Chain Verification]
