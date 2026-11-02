@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import * as Crypto from 'expo-crypto';
 import { Header } from '../components/Header';
 import { COLORS, SHADOWS } from '../constants/theme';
 import { INITIAL_SCANNED_DOCS, ScannedDocument } from '../constants/mockData';
@@ -25,13 +26,15 @@ export const DocumentScannerScreen: React.FC = () => {
     'Land Conversion Order',
   ];
 
-  const handleFastScan = () => {
+  const handleFastScan = async () => {
     setIsScanning(true);
 
-    setTimeout(() => {
-      const fakeHash = Array.from({ length: 64 }, () =>
-        Math.floor(Math.random() * 16).toString(16)
-      ).join('');
+    try {
+      const payload = `${selectedDocType}|MITAOE-1-23111191|${Date.now()}`;
+      const sha256Hash = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        payload
+      );
 
       const newDoc: ScannedDocument = {
         id: `scan-${Date.now()}`,
@@ -39,19 +42,22 @@ export const DocumentScannerScreen: React.FC = () => {
         filename: `${selectedDocType.replace(/\s+/g, '_')}_2026.pdf`,
         fileSize: '2.1 MB',
         pageCount: 2,
-        sha256Hash: fakeHash,
+        sha256Hash,
         ocrConfidence: 98.6,
         clauseCitation: 'APH 2024-27 §4.2.3 (Prescribed Format Verified)',
         status: 'Hashed & Verified',
       };
 
       setDocs([newDoc, ...docs]);
-      setIsScanning(false);
       Alert.alert(
         '📄 Document Scanned & Hashed',
         `File: ${newDoc.filename}\nSHA-256 Digest: ${newDoc.sha256Hash.slice(0, 16)}...\nOCR Confidence: ${newDoc.ocrConfidence}%\nSealed into Azure Storage.`
       );
-    }, 1200);
+    } catch (err: any) {
+      Alert.alert('Scan Error', err.message);
+    } finally {
+      setIsScanning(false);
+    }
   };
 
   return (

@@ -1,5 +1,5 @@
 // mobile-app/src/screens/OfficerProfileScreen.tsx
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,16 +7,44 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Image,
 } from 'react-native';
 import { Header } from '../components/Header';
 import { COLORS, SHADOWS } from '../constants/theme';
 import { CURRENT_EVC_OFFICER } from '../constants/mockData';
+import { captureQueue, CaptureRecord } from '../services/captureQueue';
 
 interface OfficerProfileScreenProps {
   onLogout: () => void;
 }
 
 export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ onLogout }) => {
+  const [queueItems, setQueueItems] = useState<CaptureRecord[]>([]);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+
+  const loadQueue = useCallback(async () => {
+    const items = await captureQueue.getAllCaptures();
+    setQueueItems(items);
+  }, []);
+
+  useEffect(() => {
+    loadQueue();
+    const interval = setInterval(loadQueue, 3000);
+    return () => clearInterval(interval);
+  }, [loadQueue]);
+
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    const result = await captureQueue.syncQueue();
+    await loadQueue();
+    setIsSyncing(false);
+    Alert.alert('Queue Sync Finished', `Synced: ${result.synced} · Failed: ${result.failed}`);
+  };
+
+  const pendingCount = queueItems.filter((i) => i.syncStatus === 'PENDING').length;
+  const uploadingCount = queueItems.filter((i) => i.syncStatus === 'UPLOADING').length;
+  const syncedCount = queueItems.filter((i) => i.syncStatus === 'SYNCED').length;
+  const failedCount = queueItems.filter((i) => i.syncStatus === 'FAILED').length;
   return (
     <View style={styles.screen}>
       <Header />
@@ -69,6 +97,99 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ onLo
             <Text style={styles.clearanceLabel}>Assigned Campus:</Text>
             <Text style={styles.clearanceVal}>{CURRENT_EVC_OFFICER.assignedCampus}</Text>
           </View>
+        </View>
+
+        {/* Offline Upload Queue Card (Phase 4) */}
+        <View style={[styles.queueCard, SHADOWS.card]}>
+          <View style={styles.queueHeader}>
+            <View style={styles.vaultTitleRow}>
+              <Text style={styles.vaultIcon}>📦</Text>
+              <Text style={styles.vaultTitle}>Offline Evidence Upload Queue</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.syncBtn}
+              onPress={handleManualSync}
+              disabled={isSyncing}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.syncBtnText}>{isSyncing ? '🔄 Syncing...' : '⚡ Sync Now'}</Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.queueSub}>
+            Captures are persisted locally to SQLite and automatically uploaded when network connectivity returns.
+          </Text>
+
+          {/* Status Metrics Pills */}
+          <View style={styles.queueMetricsRow}>
+            <View style={[styles.qPill, styles.qPillGreen]}>
+              <Text style={styles.qPillTextGreen}>🟢 {syncedCount} Synced</Text>
+            </View>
+            <View style={[styles.qPill, styles.qPillAmber]}>
+              <Text style={styles.qPillTextAmber}>⏳ {pendingCount} Pending</Text>
+            </View>
+            <View style={[styles.qPill, styles.qPillBlue]}>
+              <Text style={styles.qPillTextBlue}>🔄 {uploadingCount} Active</Text>
+            </View>
+            <View style={[styles.qPill, styles.qPillRed]}>
+              <Text style={styles.qPillTextRed}>🔴 {failedCount} Failed</Text>
+            </View>
+          </View>
+
+          {/* Queue Items List */}
+          {queueItems.length > 0 ? (
+            <View style={styles.queueItemsContainer}>
+              {queueItems.slice(0, 5).map((item) => (
+                <View key={item.id} style={styles.queueItemRow}>
+                  <View style={styles.queueThumbBox}>
+                    <Text style={{ fontSize: 16 }}>📸</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.queueItemTitle} numberOfLines={1}>
+                      {item.labName} ({item.labCode})
+                    </Text>
+                    <Text style={styles.queueItemHash} numberOfLines={1}>
+                      SHA: {item.imageHash.slice(0, 16)}...
+                    </Text>
+                    <Text style={styles.queueItemMeta}>
+                      GPS: {item.lat.toFixed(4)}°, {item.lng.toFixed(4)}° · {item.distanceM}m
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.statusBadgeSmall,
+                      item.syncStatus === 'SYNCED'
+                        ? styles.badgeBgGreen
+                        : item.syncStatus === 'FAILED'
+                        ? styles.badgeBgRed
+                        : item.syncStatus === 'UPLOADING'
+                        ? styles.badgeBgBlue
+                        : styles.badgeBgAmber,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.statusBadgeTextSmall,
+                        item.syncStatus === 'SYNCED'
+                          ? styles.textGreen
+                          : item.syncStatus === 'FAILED'
+                          ? styles.textRed
+                          : item.syncStatus === 'UPLOADING'
+                          ? styles.textBlue
+                          : styles.textAmber,
+                      ]}
+                    >
+                      {item.syncStatus}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.emptyQueueBox}>
+              <Text style={styles.emptyQueueText}>All local evidence synced with Azure Central India.</Text>
+            </View>
+          )}
         </View>
 
         {/* Azure Documents Vault */}
@@ -354,6 +475,173 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '800',
     color: '#059669',
+  },
+  queueCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 16,
+  },
+  queueHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  queueSub: {
+    fontSize: 10.5,
+    color: '#64748B',
+    lineHeight: 15,
+    marginBottom: 12,
+  },
+  syncBtn: {
+    backgroundColor: '#0B2E5C',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  syncBtnText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  queueMetricsRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 12,
+  },
+  qPill: {
+    flex: 1,
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  qPillGreen: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#A7F3D0',
+  },
+  qPillAmber: {
+    backgroundColor: '#FEF3C7',
+    borderColor: '#FDE68A',
+  },
+  qPillBlue: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+  },
+  qPillRed: {
+    backgroundColor: '#FFF1F2',
+    borderColor: '#FECDD3',
+  },
+  qPillTextGreen: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#047857',
+  },
+  qPillTextAmber: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#B45309',
+  },
+  qPillTextBlue: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#1D4ED8',
+  },
+  qPillTextRed: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#E11D48',
+  },
+  queueItemsContainer: {
+    gap: 8,
+  },
+  queueItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  queueThumbBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 6,
+    backgroundColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  queueItemTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  queueItemHash: {
+    fontSize: 9,
+    fontFamily: 'monospace',
+    color: '#64748B',
+  },
+  queueItemMeta: {
+    fontSize: 9,
+    fontFamily: 'monospace',
+    color: '#0284C7',
+  },
+  statusBadgeSmall: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  statusBadgeTextSmall: {
+    fontSize: 8.5,
+    fontWeight: '800',
+  },
+  badgeBgGreen: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#A7F3D0',
+  },
+  badgeBgAmber: {
+    backgroundColor: '#FEF3C7',
+    borderColor: '#FDE68A',
+  },
+  badgeBgBlue: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+  },
+  badgeBgRed: {
+    backgroundColor: '#FFF1F2',
+    borderColor: '#FECDD3',
+  },
+  textGreen: {
+    color: '#047857',
+  },
+  textAmber: {
+    color: '#B45309',
+  },
+  textBlue: {
+    color: '#1D4ED8',
+  },
+  textRed: {
+    color: '#E11D48',
+  },
+  emptyQueueBox: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  emptyQueueText: {
+    fontSize: 10.5,
+    color: '#64748B',
+    fontWeight: '600',
   },
   logoutBtn: {
     backgroundColor: '#FEF2F2',

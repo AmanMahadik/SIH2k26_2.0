@@ -35,6 +35,27 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "194d8ae4-10f6-4d48-a56b-773f3c0db159"
+      }
+    },
+    "owner": "aman1611",
+    "plugins": [
+      "expo-sqlite",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "AICTE EVC Inspector requires camera access to capture geotagged photos of laboratories and physical infrastructure."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "NirikshAI requires real-time GPS coordinates to stamp tamper-proof geotags on physical inspection evidence."
+        }
+      ]
+    ]
   }
 }

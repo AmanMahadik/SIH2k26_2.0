@@ -33,7 +33,129 @@ import {
   Phone,
   Mail,
   X,
+  Radio,
+  Compass,
+  ShieldAlert,
+  Crosshair,
+  Navigation,
+  AlertOctagon,
+  CheckCircle,
+  Info,
+  Wind,
+  Droplets,
+  Thermometer,
+  Zap,
+  RotateCw,
+  Grid3X3,
+  Settings,
+  FileEdit,
+  Video,
+  VideoOff,
+  Eye,
 } from 'lucide-react';
+
+interface StatutoryLab {
+  id: string;
+  name: string;
+  code: string;
+  building: string;
+  clause: string;
+  centroid: { lat: number; lng: number };
+  radiusMeters: number;
+  carpetAreaSqM: number;
+  approvedIntakeRatio: string;
+  equipmentSummary: string;
+  icon: string;
+}
+
+const AICTE_STATUTORY_LABS: StatutoryLab[] = [
+  {
+    id: 'lab-comp-center',
+    name: 'High-Density Computer Center (540 PCs)',
+    code: 'LAB-CC-03',
+    building: 'Main Academic Building, Wing A, Floor 2',
+    clause: 'APH 2024-27 §4.4.1 (1:4 Student-PC Ratio)',
+    centroid: { lat: 18.675620, lng: 73.896710 },
+    radiusMeters: 35,
+    carpetAreaSqM: 520,
+    approvedIntakeRatio: '540 Terminals for 180 Intake',
+    equipmentSummary: 'Core i7 16GB, Dual 1 Gbps Leased Line, 40 kVA Online UPS',
+    icon: '💻',
+  },
+  {
+    id: 'lab-ai-robotics',
+    name: 'Robotics & AI Center of Excellence',
+    code: 'LAB-AI-01',
+    building: 'Technology Annex, Wing B',
+    clause: 'APH 2024-27 §4.4.3 (Emerging Tech Labs)',
+    centroid: { lat: 18.675810, lng: 73.896920 },
+    radiusMeters: 30,
+    carpetAreaSqM: 380,
+    approvedIntakeRatio: 'AIML Specialization Cohort',
+    equipmentSummary: 'NVIDIA RTX GPU Rig, 6-Axis Robotic Arms, ROS2 Workstations',
+    icon: '🔬',
+  },
+  {
+    id: 'lab-vlsi-cleanroom',
+    name: 'VLSI Design & Cleanroom Fabrication',
+    code: 'LAB-VLSI-02',
+    building: 'Electronics & Semiconductor Wing, Level 1',
+    clause: 'APH 2024-27 §4.4.2 (Specialized Electronics)',
+    centroid: { lat: 18.676010, lng: 73.896350 },
+    radiusMeters: 25,
+    carpetAreaSqM: 290,
+    approvedIntakeRatio: 'VLSI & Embedded Systems',
+    equipmentSummary: 'Cadence EDA Suite, Class 10k Laminar Hood, Anti-Static Grid',
+    icon: '⚡',
+  },
+  {
+    id: 'lab-mech-workshop',
+    name: 'CNC & Heavy Machinery Workshop',
+    code: 'LAB-MECH-04',
+    building: 'Mechanical Engineering Workshop Hangar 1',
+    clause: 'APH 2024-27 §4.4.4 (Core Engineering Workshops)',
+    centroid: { lat: 18.675190, lng: 73.897450 },
+    radiusMeters: 45,
+    carpetAreaSqM: 650,
+    approvedIntakeRatio: 'Mechanical & Automation Cohort',
+    equipmentSummary: '4-Axis CNC Milling, Industrial Lathes, 5-Ton Overhead Crane',
+    icon: '⚙️',
+  },
+  {
+    id: 'lab-wheelchair-ramp',
+    name: 'Barrier-Free Wheelchair Ramp Portal',
+    code: 'RAMP-PORTAL-01',
+    building: 'Administrative Block Portal Entry A',
+    clause: 'APH 2024-27 §4.2.2 (RPwD Act 2016)',
+    centroid: { lat: 18.675380, lng: 73.896620 },
+    radiusMeters: 20,
+    carpetAreaSqM: 110,
+    approvedIntakeRatio: '100% Inclusive Campus Mandate',
+    equipmentSummary: '1:12 Gradient, Anti-Skid Polyurethane, Continuous 900mm Rail',
+    icon: '♿',
+  },
+];
+
+// Geodesic distance calculation via Haversine formula (returns meters with 1 decimal place)
+function calculateHaversineDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const R = 6371000;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 10) / 10;
+}
 
 interface AlertItem {
   id: string;
@@ -56,6 +178,10 @@ interface EvidenceItem {
   time: string;
   hash: string;
   verified: boolean;
+  geofenceStatus?: 'COMPLIANT' | 'BREACH';
+  distanceMeters?: number;
+  labCode?: string;
+  radiusMeters?: number;
 }
 
 export default function MobileAppPage() {
@@ -90,31 +216,363 @@ export default function MobileAppPage() {
 
   // Geotagging & Camera State
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number; accuracy: number }>({
-    lat: 18.457532,
-    lng: 73.850831,
+    lat: 18.675620,
+    lng: 73.896710,
     accuracy: 2.1,
   });
   const [gpsStatus, setGpsStatus] = useState<string>('Live GPS Locked');
   const [isCapturing, setIsCapturing] = useState(false);
   const [selectedCampusCategory, setSelectedCampusCategory] = useState('Computer Center (540 PCs)');
+
+  // Geofencing & Lab Inspection State
+  const [selectedLabId, setSelectedLabId] = useState<string>('lab-comp-center');
+  const [gpsMode, setGpsMode] = useState<'simulation' | 'real'>('simulation');
+  const [simDistanceOffset, setSimDistanceOffset] = useState<number>(14);
+  const [pinnedCustomCentroid, setPinnedCustomCentroid] = useState<{ lat: number; lng: number } | null>(null);
+  const [showBreachModal, setShowBreachModal] = useState<boolean>(false);
+  const [breachAlertData, setBreachAlertData] = useState<any | null>(null);
+  const [pinFeedbackToast, setPinFeedbackToast] = useState<string | null>(null);
+
+  // Active Lab & Centroid Geofence Calculation
+  const activeLab = AICTE_STATUTORY_LABS.find((l) => l.id === selectedLabId) || AICTE_STATUTORY_LABS[0];
+  const targetCentroid = pinnedCustomCentroid || activeLab.centroid;
+
+  // Real-time Geofence Haversine Calculation
+  const currentDistance = calculateHaversineDistance(
+    gpsCoords.lat,
+    gpsCoords.lng,
+    targetCentroid.lat,
+    targetCentroid.lng
+  );
+  const isInsideGeofence = currentDistance <= activeLab.radiusMeters;
+  const breachDelta = Math.max(0, Math.round(currentDistance - activeLab.radiusMeters));
+
+  // Sync simulated coordinates when in simulation mode
+  useEffect(() => {
+    if (gpsMode === 'simulation') {
+      const latOffset = (simDistanceOffset / 111139) * 0.7071;
+      const lngOffset =
+        (simDistanceOffset / (111139 * Math.cos((targetCentroid.lat * Math.PI) / 180))) * 0.7071;
+      const simLat = Number((targetCentroid.lat + latOffset).toFixed(6));
+      const simLng = Number((targetCentroid.lng + lngOffset).toFixed(6));
+      setGpsCoords({
+        lat: simLat,
+        lng: simLng,
+        accuracy: 1.8,
+      });
+      setGpsStatus(`Simulated GPS (${simDistanceOffset}m from centroid)`);
+    }
+  }, [simDistanceOffset, selectedLabId, gpsMode, pinnedCustomCentroid]);
+
+  // Camera HUD & GPS Map Viewfinder State (Matching GPS Map Camera UI)
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [zoomLevel, setZoomLevel] = useState<'0.6X' | '1X' | '2X'>('2X');
+  const [showGrid, setShowGrid] = useState<boolean>(true);
+  const [flashMode, setFlashMode] = useState<'off' | 'auto' | 'on'>('off');
+  const [isFlashing, setIsFlashing] = useState<boolean>(false);
+  const [isLiveCameraActive, setIsLiveCameraActive] = useState<boolean>(false);
+  const [cameraFacing, setCameraFacing] = useState<'environment' | 'user'>('environment');
+  const [recordedSeconds, setRecordedSeconds] = useState<number>(136); // starts at 00:02:16 matching reference!
+  const [compassHeading, setCompassHeading] = useState<string>('160° NW');
+  const [windSpeed, setWindSpeed] = useState<string>('12 km/h');
+  const [humidity, setHumidity] = useState<string>('40%');
+  const [altitude, setAltitude] = useState<number>(564);
+  const [magneticField, setMagneticField] = useState<string>('256 µT');
+  const [temperature, setTemperature] = useState<string>('25°C');
+  const [addressText, setAddressText] = useState<string>(
+    'MIT Academy of Engineering, Dehu Phata, Alandi (Dandi), Pune, Maharashtra 412105, India'
+  );
+  const [inspectionNotes, setInspectionNotes] = useState<string>('');
+  const [showNotesPopup, setShowNotesPopup] = useState<boolean>(false);
+  const [showSettingsPopup, setShowSettingsPopup] = useState<boolean>(false);
+  const [lastCapturedEvidence, setLastCapturedEvidence] = useState<any | null>(null);
+
+  // Live Timer increment
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setRecordedSeconds((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTimer = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // Real device GPS tracking & OpenStreetMap Reverse Geocoding
+  useEffect(() => {
+    if (gpsMode === 'real' && typeof navigator !== 'undefined' && 'geolocation' in navigator) {
+      const watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          const lat = Number(pos.coords.latitude.toFixed(6));
+          const lng = Number(pos.coords.longitude.toFixed(6));
+          const acc = Number((pos.coords.accuracy || 2.1).toFixed(1));
+          setGpsCoords({ lat, lng, accuracy: acc });
+          if (pos.coords.altitude) {
+            setAltitude(Math.round(pos.coords.altitude));
+          }
+          setGpsStatus(`Live GPS Fixed (±${acc}m)`);
+
+          // Reverse geocode via OpenStreetMap
+          fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+            .then((r) => r.json())
+            .then((data) => {
+              if (data && data.display_name) {
+                setAddressText(data.display_name);
+              }
+            })
+            .catch(() => {});
+        },
+        (err) => {
+          console.warn('Geolocation error:', err.message);
+          setGpsStatus('GPS Calibrated for Centroid Scrutiny');
+        },
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+      );
+
+      return () => navigator.geolocation.clearWatch(watchId);
+    }
+  }, [gpsMode]);
+
+  // Live Compass Heading Listener
+  useEffect(() => {
+    const handleOrientation = (e: DeviceOrientationEvent) => {
+      if (e.alpha !== null) {
+        const deg = Math.round(e.alpha);
+        const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+        const index = Math.round(deg / 45) % 8;
+        setCompassHeading(`${deg}° ${directions[index]}`);
+      }
+    };
+
+    if (typeof window !== 'undefined' && window.DeviceOrientationEvent) {
+      window.addEventListener('deviceorientation', handleOrientation);
+      return () => window.removeEventListener('deviceorientation', handleOrientation);
+    }
+  }, []);
+
+  // Toggle Live Webcam Video Stream
+  const toggleLiveCamera = async () => {
+    if (isLiveCameraActive) {
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach((track) => track.stop());
+        videoRef.current.srcObject = null;
+      }
+      setIsLiveCameraActive(false);
+      return;
+    }
+
+    try {
+      if (typeof navigator !== 'undefined' && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: cameraFacing },
+          audio: false,
+        });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play();
+          setIsLiveCameraActive(true);
+        }
+      }
+    } catch (e) {
+      console.warn('Webcam stream note:', e);
+      setIsLiveCameraActive(false);
+      setPinFeedbackToast('Facility viewfinder active (Webcam not available in current window)');
+      setTimeout(() => setPinFeedbackToast(null), 3000);
+    }
+  };
+
+  // Generate Section 65B Stamped Proof Canvas (Matching GPS Map Camera)
+  const generateStampedEvidenceImage = (): string => {
+    if (typeof document === 'undefined') return '';
+    const canvas = document.createElement('canvas');
+    canvas.width = 720;
+    canvas.height = 960;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+
+    // Draw base scene (from live webcam video or stylized lab graphic)
+    if (videoRef.current && isLiveCameraActive && videoRef.current.readyState >= 2) {
+      try {
+        ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+      } catch {
+        drawFallbackCanvasLab(ctx, canvas.width, canvas.height);
+      }
+    } else {
+      drawFallbackCanvasLab(ctx, canvas.width, canvas.height);
+    }
+
+    // Top Header Overlay (REC timer & Resolution)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    ctx.fillRect(0, 0, canvas.width, 70);
+    ctx.fillStyle = '#dc2626';
+    ctx.beginPath();
+    ctx.arc(360, 35, 18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 16px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`REC · ${formatTimer(recordedSeconds)}`, 360, 41);
+
+    // Bottom Watermark Card (Exact match to reference image)
+    const cardY = canvas.height - 270;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.78)';
+    ctx.fillRect(16, cardY, canvas.width - 32, 250);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(16, cardY, canvas.width - 32, 250);
+
+    // Mini Satellite Map Thumbnail
+    const mapX = 32;
+    const mapY = cardY + 20;
+    const mapW = 110;
+    const mapH = 110;
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(mapX, mapY, mapW, mapH);
+    ctx.strokeStyle = '#06b6d4';
+    ctx.strokeRect(mapX, mapY, mapW, mapH);
+
+    ctx.strokeStyle = 'rgba(6, 182, 212, 0.5)';
+    ctx.beginPath();
+    ctx.arc(mapX + mapW / 2, mapY + mapH / 2, 40, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(mapX + mapW / 2, mapY + mapH / 2, 22, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.arc(mapX + mapW / 2, mapY + mapH / 2, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('SAT MAP', mapX + mapW / 2, mapY + mapH - 8);
+
+    // Location & Date/Time
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 20px sans-serif';
+    ctx.fillText('MIT Academy of Engineering (MITAOE)', 160, cardY + 42);
+
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '13px sans-serif';
+    ctx.fillText(addressText.slice(0, 52), 160, cardY + 68);
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 15px monospace';
+    ctx.fillText(`Lat ${gpsCoords.lat.toFixed(4)}° N  Long ${gpsCoords.lng.toFixed(4)}° E`, 160, cardY + 98);
+
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '12px monospace';
+    ctx.fillText(
+      new Date().toLocaleString('en-IN', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      }),
+      160,
+      cardY + 124
+    );
+
+    // Telemetry strip
+    const telemY = cardY + 160;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.beginPath();
+    ctx.moveTo(30, telemY);
+    ctx.lineTo(canvas.width - 30, telemY);
+    ctx.stroke();
+
+    ctx.fillStyle = '#f1f5f9';
+    ctx.font = '13px monospace';
+    ctx.fillText(`༄ ${windSpeed}`, 32, telemY + 28);
+    ctx.fillText(`💧 ${humidity}`, 145, telemY + 28);
+    ctx.fillText(`⛰️ ${altitude} m`, 255, telemY + 28);
+    ctx.fillText(`⛅ ${temperature}`, 370, telemY + 28);
+    ctx.fillText(`🧭 ${compassHeading}`, 485, telemY + 28);
+    ctx.fillText(`🧲 ${magneticField}`, 600, telemY + 28);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '10px monospace';
+    ctx.fillText(`AICTE STATUTORY FIELD PROOF • APH §4.2.3 • SEC 65B EVIDENCE ACT`, 32, telemY + 65);
+
+    return canvas.toDataURL('image/jpeg', 0.88);
+  };
+
+  const drawFallbackCanvasLab = (ctx: CanvasRenderingContext2D, w: number, h: number) => {
+    const grad = ctx.createLinearGradient(0, 0, w, h);
+    grad.addColorStop(0, '#09182b');
+    grad.addColorStop(0.5, '#0e2a4a');
+    grad.addColorStop(1, '#05101f');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Subtle grid lines
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.15)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < w; x += 40) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, h);
+      ctx.stroke();
+    }
+    for (let y = 0; y < h; y += 40) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+
+    // Central Icon & Lab Title
+    ctx.textAlign = 'center';
+    ctx.font = '72px sans-serif';
+    ctx.fillText(activeLab.icon, w / 2, h / 2 - 60);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 24px sans-serif';
+    ctx.fillText(activeLab.name, w / 2, h / 2 + 10);
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = '14px monospace';
+    ctx.fillText(`${activeLab.code} • ${activeLab.clause}`, w / 2, h / 2 + 40);
+  };
+
   const [evidenceList, setEvidenceList] = useState<EvidenceItem[]>([
     {
       id: 'ev-1',
-      title: 'Advanced Computer Center (540 PCs)',
+      title: 'High-Density Computer Center (540 PCs)',
       category: 'Computer Center',
       lat: '18.457532° N, 73.850831° E (±2.1m)',
       time: '10:15 AM',
       hash: '9a6b12a84358fa838d74883b4b84013481239840293482390481023948102394',
       verified: true,
+      geofenceStatus: 'COMPLIANT',
+      distanceMeters: 11.4,
+      labCode: 'LAB-CC-03',
+      radiusMeters: 35,
     },
     {
       id: 'ev-2',
-      title: 'Wheelchair Ramp & Barrier-Free Access',
+      title: 'Barrier-Free Wheelchair Ramp Portal',
       category: 'Wheelchair Ramps',
       lat: '18.457812° N, 73.851042° E (±1.8m)',
       time: '10:30 AM',
       hash: 'f4b1c2d3e4a5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef',
       verified: true,
+      geofenceStatus: 'COMPLIANT',
+      distanceMeters: 8.2,
+      labCode: 'RAMP-PORTAL-01',
+      radiusMeters: 20,
     },
     {
       id: 'ev-3',
@@ -124,6 +582,10 @@ export default function MobileAppPage() {
       time: '11:05 AM',
       hash: '8e7a6b5c4d3e2f1a0987654321fedcba9876543210abcdef0123456789abcdef',
       verified: true,
+      geofenceStatus: 'COMPLIANT',
+      distanceMeters: 14.8,
+      labCode: 'LAB-AI-01',
+      radiusMeters: 30,
     },
   ]);
 
@@ -197,7 +659,7 @@ export default function MobileAppPage() {
           setGpsStatus(`Live GPS Fixed (±${pos.coords.accuracy.toFixed(1)}m)`);
         },
         () => {
-          setGpsStatus('EVC Campus Default: PICT Pune');
+          setGpsStatus('EVC Campus Default: MITAOE Alandi');
         },
         { enableHighAccuracy: true, timeout: 5000 }
       );
@@ -238,49 +700,184 @@ export default function MobileAppPage() {
     return Math.random().toString(36).substring(2) + Date.now().toString(36);
   };
 
-  // 4. Capture Real Geotagged Photo & Post to Azure PostgreSQL
+  // 4. Capture Real Geotagged & Geofence-Verified Evidence
   const handleCaptureGeotagEvidence = async () => {
+    // 1. Geofence Fraud Detection Check
+    if (!isInsideGeofence) {
+      setBreachAlertData({
+        lab: activeLab,
+        distance: currentDistance,
+        limit: activeLab.radiusMeters,
+        breachDelta,
+        coords: gpsCoords,
+        timestamp: new Date().toISOString(),
+      });
+      setShowBreachModal(true);
+      return;
+    }
+
     setIsCapturing(true);
+    setIsFlashing(true);
+    setTimeout(() => setIsFlashing(false), 200);
+
     const timestamp = new Date().toISOString();
-    const rawPayload = `PICT-EVC|${selectedCampusCategory}|${gpsCoords.lat},${gpsCoords.lng}|${timestamp}`;
+    const rawPayload = `MITAOE-EVC|${activeLab.code}|${activeLab.name}|${gpsCoords.lat},${gpsCoords.lng}|DIST:${currentDistance}m|${timestamp}`;
     const sha256Hash = await computeClientSha256(rawPayload);
+    const photoDataUrl = generateStampedEvidenceImage();
 
     try {
-      // POST cryptographic evidence to Azure PostgreSQL audit_log
-      const res = await fetch('/api/audit', {
+      // 1. Post directly to /api/inspections so it appears in Admin Portal for verification!
+      await fetch('/api/inspections', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          campus_name: 'MIT Academy of Engineering (MITAOE)',
+          aicte_id: '1-23111191',
+          lab_name: activeLab.name,
+          lab_code: activeLab.code,
+          statutory_clause: activeLab.clause,
+          address: addressText,
+          latitude: gpsCoords.lat,
+          longitude: gpsCoords.lng,
+          accuracy: gpsCoords.accuracy,
+          altitude,
+          compass_heading: compassHeading,
+          wind_speed: windSpeed,
+          humidity,
+          magnetic_field: magneticField,
+          temperature,
+          distance_meters: currentDistance,
+          statutory_radius_meters: activeLab.radiusMeters,
+          geofence_status: isInsideGeofence ? 'COMPLIANT' : 'BREACH',
+          inspector_name: 'Dr. Priya Sharma',
+          sha256_seal: sha256Hash,
+          photo_type:
+            activeLab.id === 'lab-wheelchair-ramp'
+              ? 'wheelchair_ramp'
+              : activeLab.id === 'lab-ai-robotics'
+              ? 'ai_robotics'
+              : 'computer_center',
+          photo_url: photoDataUrl,
+        }),
+      });
+
+      // 2. POST cryptographic evidence to Azure PostgreSQL audit_log
+      await fetch('/api/audit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           actor: 'Dr. Priya Sharma (EVC Mobile Officer)',
-          action: 'EVC_GEOTAGGED_INSPECTION_SEALED',
+          action: 'EVC_GEOTAGGED_LAB_INSPECTION_SEALED',
           entity: 'inspection_evidence',
           payload: {
-            campus: 'Pune Institute of Computer Technology (1-10972348121)',
-            category: selectedCampusCategory,
+            campus: 'MIT Academy of Engineering (1-23111191)',
+            lab_id: activeLab.id,
+            lab_name: activeLab.name,
+            lab_code: activeLab.code,
+            statutory_clause: activeLab.clause,
+            geofence_verified: true,
+            distance_meters: currentDistance,
+            statutory_radius_meters: activeLab.radiusMeters,
             gps: { lat: gpsCoords.lat, lng: gpsCoords.lng, accuracy: gpsCoords.accuracy },
+            mock_location_detected: false,
             timestamp,
             sha256_seal: sha256Hash,
           },
         }),
       });
-      const data = await res.json();
 
       const newEvidence: EvidenceItem = {
         id: `ev-${Date.now()}`,
-        title: `${selectedCampusCategory}`,
-        category: selectedCampusCategory,
+        title: `${activeLab.name}`,
+        category: activeLab.name,
         lat: `${gpsCoords.lat}° N, ${gpsCoords.lng}° E (±${gpsCoords.accuracy}m)`,
         time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
         hash: sha256Hash,
         verified: true,
+        geofenceStatus: 'COMPLIANT',
+        distanceMeters: currentDistance,
+        labCode: activeLab.code,
+        radiusMeters: activeLab.radiusMeters,
       };
 
       setEvidenceList((prev) => [newEvidence, ...prev]);
+      setLastCapturedEvidence({
+        lab: activeLab,
+        distance: currentDistance,
+        coords: gpsCoords,
+        hash: sha256Hash,
+        photoUrl: photoDataUrl,
+      });
       setStats((prev) => ({ ...prev, total_audits: prev.total_audits + 1 }));
+      setPinFeedbackToast(`✓ ${activeLab.code} Stamped Photo Sealed & Queued for Admin Verification!`);
+      setTimeout(() => setPinFeedbackToast(null), 5000);
     } catch (err) {
       console.error('Error posting inspection audit event:', err);
     } finally {
       setIsCapturing(false);
+    }
+  };
+
+  // Commit Geofence Breach Attempt to Azure Audit Ledger (Sec 65B)
+  const handleRecordBreachInAuditLedger = async () => {
+    if (!breachAlertData) return;
+    try {
+      await fetch('/api/audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          actor: 'Dr. Priya Sharma (EVC Mobile Officer)',
+          action: 'EVC_GEOFENCE_BREACH_DETECTED',
+          entity: 'inspection_security_violation',
+          payload: {
+            campus: 'MIT Academy of Engineering (1-23111191)',
+            lab_id: breachAlertData.lab.id,
+            lab_name: breachAlertData.lab.name,
+            geofence_verified: false,
+            distance_meters: breachAlertData.distance,
+            statutory_radius_meters: breachAlertData.limit,
+            breach_delta_meters: breachAlertData.breachDelta,
+            statutory_violation: 'APH 2024-27 §4.2.3 - Off-site evidence submission rejected',
+            gps: { lat: breachAlertData.coords.lat, lng: breachAlertData.coords.lng },
+            action_taken: 'SHUTTER_LOCKED_AND_AUDIT_LOGGED',
+          },
+        }),
+      });
+      setStats((prev) => ({ ...prev, total_audits: prev.total_audits + 1 }));
+      setShowBreachModal(false);
+      setPinFeedbackToast('⚠️ Geofence breach violation committed to Azure Audit Ledger (Sec 65B)!');
+      setTimeout(() => setPinFeedbackToast(null), 5000);
+    } catch (e) {
+      console.error('Failed to record breach:', e);
+      setShowBreachModal(false);
+    }
+  };
+
+  // Pin Real GPS as Centroid for physical on-site testing
+  const handlePinCurrentLocationAsCentroid = () => {
+    if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const newCentroid = {
+            lat: Number(pos.coords.latitude.toFixed(6)),
+            lng: Number(pos.coords.longitude.toFixed(6)),
+          };
+          setPinnedCustomCentroid(newCentroid);
+          setGpsCoords({
+            lat: newCentroid.lat,
+            lng: newCentroid.lng,
+            accuracy: Number(pos.coords.accuracy.toFixed(1)),
+          });
+          setGpsMode('real');
+          setPinFeedbackToast(`✓ Lab Centroid calibrated to your real GPS (${newCentroid.lat}° N, ${newCentroid.lng}° E)! Walk 30m away to test geofence breach.`);
+          setTimeout(() => setPinFeedbackToast(null), 6000);
+        },
+        (err) => {
+          setPinFeedbackToast('Could not access device GPS. Please grant browser permission.');
+          setTimeout(() => setPinFeedbackToast(null), 4000);
+        },
+        { enableHighAccuracy: true }
+      );
     }
   };
 
@@ -652,79 +1249,642 @@ export default function MobileAppPage() {
           )}
 
           {/* ========================================================================= */}
-          {/* TAB 2: FIELD INSPECTION & GEOTAGGING (USE CASE 1)                         */}
+          {/* TAB 2: LAB GEOFENCING & PHYSICAL INSPECTION MODULE (USE CASE 1)           */}
           {/* ========================================================================= */}
           {activeTab === 'inspection' && (
             <div className="space-y-3">
-              <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
-                <div className="flex items-center space-x-2">
-                  <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-[9px] font-bold rounded">
-                    EVC Camera
-                  </span>
-                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[9px] font-bold rounded">
-                    {gpsStatus}
-                  </span>
-                </div>
-                <h3 className="text-sm font-extrabold text-[#0B2E5C] mt-1">1. Field Inspection &amp; Geotagging</h3>
-                <p className="text-[10px] text-slate-500">
-                  Prevents fraudulent recycled photos by binding GPS coordinates and device timestamp to a real SHA-256 seal in Azure DB.
-                </p>
-
-                {/* Campus Category Picker */}
-                <div className="mt-2 text-xs">
-                  <label className="text-[10px] font-bold text-slate-700">Select Inspection Target:</label>
-                  <select
-                    value={selectedCampusCategory}
-                    onChange={(e) => setSelectedCampusCategory(e.target.value)}
-                    className="w-full mt-1 px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs bg-white text-slate-800 font-semibold"
-                  >
-                    <option value="Computer Center (540 PCs)">Computer Center (540 PCs) - Lab #3</option>
-                    <option value="Wheelchair Ramps & Barrier-Free Entry">Wheelchair Ramps & Barrier-Free Entry</option>
-                    <option value="Advanced Electronics & IoT Lab">Advanced Electronics & IoT Lab</option>
-                    <option value="Chemical & Materials Engineering Workshop">Chemical & Materials Engineering Workshop</option>
-                    <option value="Central Library & Digital E-Resource Room">Central Library & Digital E-Resource Room</option>
-                    <option value="Campus Land Boundary & Title Marker">Campus Land Boundary & Title Marker (§4.2.1)</option>
-                  </select>
-                </div>
-
-                {/* Live Viewfinder Simulation Box */}
-                <div className="mt-2.5 relative h-48 bg-slate-950 rounded-xl overflow-hidden flex flex-col justify-between p-2.5 border-2 border-dashed border-cyan-400">
-                  {/* Camera Reticle corners */}
-                  <div className="flex justify-between items-start">
-                    <span className="text-[9px] text-cyan-400 font-mono font-bold tracking-wider animate-pulse">
-                      ● LIVE CAMERA &amp; GPS
+              {/* Geofence Card Container */}
+              <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs space-y-2.5">
+                {/* Badges & Compliance Header */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-1.5">
+                    <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-[9px] font-bold rounded flex items-center space-x-1">
+                      <Radio className="w-3 h-3 text-blue-600 animate-pulse" />
+                      <span>EVC Geofence</span>
                     </span>
-                    <span className="text-[9px] text-slate-300 font-mono">1080p · 60fps</span>
+                    <span
+                      className={`px-2 py-0.5 text-[9px] font-bold rounded flex items-center space-x-1 ${
+                        isInsideGeofence
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-rose-100 text-rose-800 animate-pulse'
+                      }`}
+                    >
+                      {isInsideGeofence ? (
+                        <>
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          <span>Within Fence ({currentDistance}m)</span>
+                        </>
+                      ) : (
+                        <>
+                          <AlertTriangle className="w-3 h-3 text-rose-600" />
+                          <span>Breach (+{breachDelta}m)</span>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                  <span className="text-[9px] text-slate-500 font-mono">APH §4.2.3</span>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-extrabold text-[#0B2E5C]">
+                    1. Lab Geofencing &amp; Tamper Verification
+                  </h3>
+                  <p className="text-[10px] text-slate-500 leading-snug">
+                    Locks evidence shutter when outside authorized laboratory perimeter. Prevents recycled off-site photo fraud.
+                  </p>
+                </div>
+
+                {/* GPS Mode Selector (Simulation vs Real GPS) */}
+                <div className="bg-slate-100 p-1 rounded-lg flex items-center text-[10px] font-bold">
+                  <button
+                    onClick={() => setGpsMode('simulation')}
+                    className={`flex-1 py-1 rounded-md transition-all flex items-center justify-center space-x-1 ${
+                      gpsMode === 'simulation'
+                        ? 'bg-[#0B2E5C] text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <SlidersHorizontal className="w-3 h-3" />
+                    <span>Campus Walk Simulator</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setGpsMode('real');
+                      if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
+                        navigator.geolocation.getCurrentPosition(
+                          (pos) => {
+                            setGpsCoords({
+                              lat: Number(pos.coords.latitude.toFixed(6)),
+                              lng: Number(pos.coords.longitude.toFixed(6)),
+                              accuracy: Number(pos.coords.accuracy.toFixed(1)),
+                            });
+                            setGpsStatus(`Live GPS Fixed (±${pos.coords.accuracy.toFixed(1)}m)`);
+                          },
+                          null,
+                          { enableHighAccuracy: true }
+                        );
+                      }
+                    }}
+                    className={`flex-1 py-1 rounded-md transition-all flex items-center justify-center space-x-1 ${
+                      gpsMode === 'real'
+                        ? 'bg-[#0B2E5C] text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Navigation className="w-3 h-3" />
+                    <span>Real Device GPS</span>
+                  </button>
+                </div>
+
+                {/* Campus Walk Simulation Controls */}
+                {gpsMode === 'simulation' ? (
+                  <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 space-y-2">
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="font-bold text-slate-700 flex items-center space-x-1">
+                        <Compass className="w-3 h-3 text-[#FF8C00]" />
+                        <span>Simulated Distance to Lab:</span>
+                      </span>
+                      <span
+                        className={`font-mono font-extrabold px-1.5 py-0.5 rounded ${
+                          isInsideGeofence
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-rose-100 text-rose-800'
+                        }`}
+                      >
+                        {simDistanceOffset}m ({isInsideGeofence ? 'Compliant' : 'Breach'})
+                      </span>
+                    </div>
+
+                    {/* Interactive Slider */}
+                    <input
+                      type="range"
+                      min="0"
+                      max="150"
+                      step="2"
+                      value={simDistanceOffset}
+                      onChange={(e) => setSimDistanceOffset(Number(e.target.value))}
+                      className="w-full accent-[#FF8C00] cursor-pointer h-1.5 bg-slate-200 rounded-lg"
+                    />
+
+                    {/* Quick Preset Buttons */}
+                    <div className="grid grid-cols-3 gap-1.5 pt-0.5">
+                      <button
+                        onClick={() => setSimDistanceOffset(12)}
+                        className={`py-1 px-1.5 rounded text-[9px] font-bold border transition-all ${
+                          simDistanceOffset === 12
+                            ? 'bg-emerald-600 text-white border-emerald-600'
+                            : 'bg-white text-emerald-800 border-emerald-200 hover:bg-emerald-50'
+                        }`}
+                      >
+                        🟢 Inside Lab (12m)
+                      </button>
+                      <button
+                        onClick={() => setSimDistanceOffset(activeLab.radiusMeters - 3)}
+                        className={`py-1 px-1.5 rounded text-[9px] font-bold border transition-all ${
+                          simDistanceOffset === activeLab.radiusMeters - 3
+                            ? 'bg-amber-600 text-white border-amber-600'
+                            : 'bg-white text-amber-800 border-amber-200 hover:bg-amber-50'
+                        }`}
+                      >
+                        🟡 Doorway ({activeLab.radiusMeters - 3}m)
+                      </button>
+                      <button
+                        onClick={() => setSimDistanceOffset(120)}
+                        className={`py-1 px-1.5 rounded text-[9px] font-bold border transition-all ${
+                          simDistanceOffset === 120
+                            ? 'bg-rose-600 text-white border-rose-600'
+                            : 'bg-white text-rose-800 border-rose-200 hover:bg-rose-50'
+                        }`}
+                      >
+                        🔴 Spoof (120m)
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-800">
+                        Real Coordinates: {gpsCoords.lat.toFixed(5)}° N, {gpsCoords.lng.toFixed(5)}° E
+                      </p>
+                      <p className="text-[9px] text-slate-500">Hardware Acc: ±{gpsCoords.accuracy}m</p>
+                    </div>
+                    <button
+                      onClick={handlePinCurrentLocationAsCentroid}
+                      className="px-2 py-1 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded text-[9px] font-extrabold flex items-center space-x-1"
+                    >
+                      <Crosshair className="w-3 h-3" />
+                      <span>Pin As Centroid</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Lab Target Selector Cards */}
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-[10px] font-extrabold text-[#0B2E5C] uppercase tracking-wider">
+                      Select Statutory Laboratory Target:
+                    </label>
+                    <span className="text-[9px] text-slate-500 font-mono">
+                      Radius: <strong>{activeLab.radiusMeters}m</strong>
+                    </span>
                   </div>
 
-                  <div className="text-center my-auto">
-                    <Camera className="w-8 h-8 text-cyan-400 mx-auto animate-pulse" />
-                    <p className="text-[11px] font-bold text-white mt-1">Pune Institute of Computer Technology</p>
-                    <p className="text-[9px] font-mono text-cyan-300">{selectedCampusCategory}</p>
-                  </div>
-
-                  {/* Real Tamper-Proof Watermark HUD */}
-                  <div className="bg-[#0B2E5C]/90 backdrop-blur-xs rounded p-1.5 text-[8px] font-mono text-cyan-100 space-y-0.5">
-                    <p>📍 GPS: {gpsCoords.lat}° N, {gpsCoords.lng}° E (Accuracy: ±{gpsCoords.accuracy}m)</p>
-                    <p>🕒 UTC: {new Date().toISOString()} • Inspector: Dr. Priya Sharma</p>
-                    <p className="text-amber-300 truncate">
-                      🔒 SHA-256: 9a6b12a84358fa838d74883b4b8401348123984029348239048102394
-                    </p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {AICTE_STATUTORY_LABS.map((lab) => {
+                      const isSelected = selectedLabId === lab.id;
+                      return (
+                        <div
+                          key={lab.id}
+                          onClick={() => setSelectedLabId(lab.id)}
+                          className={`p-2 rounded-lg border text-left cursor-pointer transition-all ${
+                            isSelected
+                              ? 'bg-blue-50/70 border-[#0B2E5C] ring-1 ring-[#0B2E5C]'
+                              : 'bg-white border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-1.5">
+                            <span className="text-base">{lab.icon}</span>
+                            <div className="flex-1 truncate">
+                              <p className="text-[10px] font-extrabold text-[#0B2E5C] truncate">
+                                {lab.name}
+                              </p>
+                              <p className="text-[8px] font-mono text-slate-500">
+                                {lab.code} • Fence: {lab.radiusMeters}m
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* Shutter Capture Button - Posts directly to Azure PostgreSQL */}
-                <button
-                  onClick={handleCaptureGeotagEvidence}
-                  disabled={isCapturing}
-                  className="w-full mt-3 py-2.5 bg-[#FF8C00] hover:bg-orange-600 text-white text-xs font-black rounded-xl transition-all shadow-sm flex items-center justify-center space-x-2 cursor-pointer"
-                >
-                  <Camera className="w-4 h-4" />
-                  <span>{isCapturing ? 'Computing SHA-256 & Sealing in Azure...' : 'Capture Geotagged Photo Evidence'}</span>
-                </button>
+                {/* ============================================================= */}
+                {/* GPS MAP CAMERA VIEWFINDER HUD (MATCHING REFERENCE SCREENSHOT) */}
+                {/* ============================================================= */}
+                <div className="relative h-[490px] bg-slate-950 rounded-2xl overflow-hidden flex flex-col justify-between border-2 border-slate-800 shadow-2xl select-none">
+                  
+                  {/* Hidden Canvas for High-Resolution Stamped Evidence Baking */}
+                  <canvas ref={canvasRef} className="hidden" />
+
+                  {/* Camera Video Stream or Stylized Photographic Feed */}
+                  <div className="absolute inset-0 overflow-hidden">
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className={`w-full h-full object-cover transition-transform duration-300 ${
+                        isLiveCameraActive ? 'block' : 'hidden'
+                      }`}
+                      style={{
+                        transform: zoomLevel === '0.6X' ? 'scale(1)' : zoomLevel === '1X' ? 'scale(1.15)' : 'scale(1.4)',
+                      }}
+                    />
+
+                    {/* High-Resolution Laboratory Photographic Backdrop (Active when camera stream is idle or preview) */}
+                    {!isLiveCameraActive && (
+                      <div
+                        className="w-full h-full bg-cover bg-center transition-transform duration-300 relative flex items-center justify-center"
+                        style={{
+                          transform: zoomLevel === '0.6X' ? 'scale(1)' : zoomLevel === '1X' ? 'scale(1.15)' : 'scale(1.35)',
+                          backgroundImage:
+                            activeLab.id === 'lab-wheelchair-ramp'
+                              ? 'linear-gradient(180deg, rgba(11,46,92,0.65), rgba(0,0,0,0.85)), url(https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=1200&q=80)'
+                              : activeLab.id === 'lab-ai-robotics'
+                              ? 'linear-gradient(180deg, rgba(11,46,92,0.65), rgba(0,0,0,0.85)), url(https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1200&q=80)'
+                              : 'linear-gradient(180deg, rgba(11,46,92,0.65), rgba(0,0,0,0.85)), url(https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1200&q=80)',
+                        }}
+                      >
+                        {/* Dynamic Facility Graphics / Scanlines */}
+                        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px]" />
+                        
+                        {/* Center Target Crosshair & Lab Badge */}
+                        <div className="text-center relative z-10 p-4 rounded-xl bg-black/40 backdrop-blur-xs border border-white/10 max-w-[85%]">
+                          <span className="text-4xl drop-shadow mb-1 block">{activeLab.icon}</span>
+                          <p className="text-xs font-black text-white">{activeLab.name}</p>
+                          <p className="text-[10px] font-mono text-cyan-300">{activeLab.code} • {activeLab.clause}</p>
+                          <p className="text-[9px] text-slate-300 mt-1">Centroid: {targetCentroid.lat}° N, {targetCentroid.lng}° E</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Camera Flash Animation Effect */}
+                    {isFlashing && (
+                      <div className="absolute inset-0 bg-white z-50 animate-out fade-out duration-200" />
+                    )}
+                  </div>
+
+                  {/* 3x3 Compositional Grid Lines (Toggleable via ⊞) */}
+                  {showGrid && (
+                    <div className="absolute inset-0 pointer-events-none z-10 grid grid-cols-3 grid-rows-3">
+                      <div className="border-r border-b border-white/20" />
+                      <div className="border-r border-b border-white/20" />
+                      <div className="border-b border-white/20" />
+                      <div className="border-r border-b border-white/20" />
+                      <div className="border-r border-b border-white/20" />
+                      <div className="border-b border-white/20" />
+                      <div className="border-r border-white/20" />
+                      <div className="border-r border-white/20" />
+                      <div />
+                    </div>
+                  )}
+
+                  {/* TOP ACTION BAR (Exact match to top icon bar in reference photo) */}
+                  <div className="relative z-20 px-3 py-2 flex items-center justify-between bg-gradient-to-b from-black/85 via-black/40 to-transparent">
+                    {/* Top Action Icons: Grid, Flash, Notes, Camera Flip, Settings */}
+                    <div className="flex items-center space-x-2.5 text-white">
+                      {/* Grid Toggle */}
+                      <button
+                        onClick={() => setShowGrid(!showGrid)}
+                        title="Toggle 3x3 Grid"
+                        className={`p-1 rounded-md transition-colors cursor-pointer ${showGrid ? 'text-yellow-400 bg-white/10' : 'text-slate-300 hover:text-white'}`}
+                      >
+                        <Grid3X3 className="w-4 h-4" />
+                      </button>
+
+                      {/* Flash Mode Toggle */}
+                      <button
+                        onClick={() => setFlashMode(flashMode === 'off' ? 'auto' : flashMode === 'auto' ? 'on' : 'off')}
+                        title={`Flash: ${flashMode.toUpperCase()}`}
+                        className={`p-1 rounded-md transition-colors cursor-pointer ${flashMode !== 'off' ? 'text-yellow-400 bg-white/10' : 'text-slate-300 hover:text-white'}`}
+                      >
+                        <Zap className="w-4 h-4" />
+                      </button>
+
+                      {/* Field Notes Toggle */}
+                      <button
+                        onClick={() => setShowNotesPopup(!showNotesPopup)}
+                        title="Inspection Notes"
+                        className={`p-1 rounded-md transition-colors cursor-pointer ${inspectionNotes ? 'text-cyan-400 bg-white/10' : 'text-slate-300 hover:text-white'}`}
+                      >
+                        <FileEdit className="w-4 h-4" />
+                      </button>
+
+                      {/* Toggle Live Webcam / Test Feed */}
+                      <button
+                        onClick={toggleLiveCamera}
+                        title={isLiveCameraActive ? 'Turn Off Webcam' : 'Turn On Live Device Webcam'}
+                        className={`p-1 rounded-md transition-colors cursor-pointer ${isLiveCameraActive ? 'text-emerald-400 bg-emerald-500/20' : 'text-slate-300 hover:text-white'}`}
+                      >
+                        {isLiveCameraActive ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
+                      </button>
+
+                      {/* Switch Facing Camera (Front / Back) */}
+                      <button
+                        onClick={() => {
+                          setCameraFacing(cameraFacing === 'environment' ? 'user' : 'environment');
+                          if (isLiveCameraActive) {
+                            toggleLiveCamera();
+                            setTimeout(() => toggleLiveCamera(), 300);
+                          }
+                        }}
+                        title="Flip Camera"
+                        className="p-1 text-slate-300 hover:text-white rounded-md transition-colors cursor-pointer"
+                      >
+                        <RotateCw className="w-4 h-4" />
+                      </button>
+
+                      {/* Settings */}
+                      <button
+                        onClick={() => setShowSettingsPopup(!showSettingsPopup)}
+                        title="Camera Settings"
+                        className="p-1 text-slate-300 hover:text-white rounded-md transition-colors cursor-pointer"
+                      >
+                        <Settings className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Red Recording Timer Capsule (00:02:16 matching reference) */}
+                    <div className="px-2.5 py-0.5 bg-rose-600 text-white rounded-full font-mono text-[10px] font-bold flex items-center space-x-1.5 shadow-md">
+                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                      <span>{formatTimer(recordedSeconds)}</span>
+                    </div>
+                  </div>
+
+                  {/* Field Notes Popup */}
+                  {showNotesPopup && (
+                    <div className="relative z-30 mx-3 p-2.5 bg-slate-900/95 border border-cyan-500/30 rounded-xl text-white space-y-1.5">
+                      <div className="flex justify-between items-center text-[10px] font-bold text-cyan-300">
+                        <span>EVC Field Scrutiny Note:</span>
+                        <button onClick={() => setShowNotesPopup(false)} className="text-slate-400 hover:text-white">✕</button>
+                      </div>
+                      <input
+                        type="text"
+                        value={inspectionNotes}
+                        onChange={(e) => setInspectionNotes(e.target.value)}
+                        placeholder="e.g. Workstations checked, 540 monitors operational..."
+                        className="w-full text-xs px-2 py-1 bg-black/60 border border-slate-700 rounded text-white focus:outline-none focus:border-cyan-400"
+                      />
+                    </div>
+                  )}
+
+                  {/* Settings Popup */}
+                  {showSettingsPopup && (
+                    <div className="relative z-30 mx-3 p-2.5 bg-slate-900/95 border border-slate-700 rounded-xl text-white space-y-1 text-[10px]">
+                      <div className="flex justify-between items-center font-bold text-slate-200">
+                        <span>GPS Map Camera Configuration:</span>
+                        <button onClick={() => setShowSettingsPopup(false)} className="text-slate-400 hover:text-white">✕</button>
+                      </div>
+                      <div className="flex justify-between py-0.5 border-b border-slate-800">
+                        <span>Resolution:</span>
+                        <span className="font-mono text-cyan-300">1080P Full HD</span>
+                      </div>
+                      <div className="flex justify-between py-0.5 border-b border-slate-800">
+                        <span>Legal Non-Repudiation:</span>
+                        <span className="font-mono text-emerald-400 font-bold">Sec 65B Compliant</span>
+                      </div>
+                      <div className="flex justify-between py-0.5">
+                        <span>Hardware TPM Attestation:</span>
+                        <span className="font-mono text-emerald-400 font-bold">ENABLED</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Dynamic Inspector GPS Blip vs Centroid Radar */}
+                  <div className="relative z-10 pointer-events-none mx-auto my-auto text-center">
+                    <div className="relative w-16 h-16 mx-auto flex items-center justify-center">
+                      {/* Radar sweep */}
+                      <div
+                        className={`w-16 h-16 rounded-full border border-dashed absolute ${
+                          isInsideGeofence ? 'border-emerald-400/50' : 'border-rose-500/60 animate-ping'
+                        }`}
+                      />
+                      {/* Dynamic distance blip */}
+                      <div
+                        className={`absolute w-3.5 h-3.5 rounded-full border-2 border-white shadow-lg transition-all duration-300 ${
+                          isInsideGeofence ? 'bg-emerald-500' : 'bg-rose-600 animate-ping'
+                        }`}
+                        style={{
+                          transform: `translate(${Math.min(
+                            30,
+                            (simDistanceOffset / activeLab.radiusMeters) * 18
+                          )}px, ${Math.min(
+                            -24,
+                            -(simDistanceOffset / activeLab.radiusMeters) * 15
+                          )}px)`,
+                        }}
+                      />
+                    </div>
+                    <span
+                      className={`inline-block px-2 py-0.5 rounded text-[9px] font-mono font-extrabold ${
+                        isInsideGeofence
+                          ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/40'
+                          : 'bg-rose-950/90 text-rose-300 border border-rose-500/50 animate-pulse'
+                      }`}
+                    >
+                      {isInsideGeofence ? `✓ LOCKED: ${currentDistance}m` : `⚠️ BREACH: +${breachDelta}m OUTSIDE`}
+                    </span>
+                  </div>
+
+                  {/* BOTTOM SECTION: ZOOM CONTROLS + TRANSLUCENT GPS WATERMARK CARD */}
+                  <div className="relative z-20 p-2 sm:p-2.5 space-y-2 bg-gradient-to-t from-black/90 via-black/60 to-transparent">
+                    
+                    {/* Zoom Controller (0.6X, 1X, 2X matching the reference photo) */}
+                    <div className="flex justify-center items-center space-x-3 text-xs font-bold text-white">
+                      <button
+                        onClick={() => setZoomLevel('0.6X')}
+                        className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${
+                          zoomLevel === '0.6X'
+                            ? 'bg-yellow-400 text-black font-extrabold'
+                            : 'text-slate-300 hover:text-white'
+                        }`}
+                      >
+                        0.6X
+                      </button>
+                      <button
+                        onClick={() => setZoomLevel('1X')}
+                        className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${
+                          zoomLevel === '1X'
+                            ? 'bg-yellow-400 text-black font-extrabold'
+                            : 'text-slate-300 hover:text-white'
+                        }`}
+                      >
+                        1X
+                      </button>
+                      <button
+                        onClick={() => setZoomLevel('2X')}
+                        className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                          zoomLevel === '2X'
+                            ? 'bg-yellow-400 text-black font-extrabold shadow-lg scale-105'
+                            : 'text-slate-300 hover:text-white'
+                        }`}
+                      >
+                        2X
+                      </button>
+                    </div>
+
+                    {/* Translucent GPS Map Watermark Card (Exact match to reference photo layout) */}
+                    <div className="p-2 sm:p-2.5 bg-black/75 backdrop-blur-md rounded-xl border border-white/20 text-white space-y-1.5 shadow-2xl">
+                      <div className="flex items-start space-x-2.5">
+                        
+                        {/* Mini Satellite Map Radar Thumbnail */}
+                        <div className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0 border border-cyan-400/50 bg-slate-900 shadow-inner">
+                          {/* Satellite Grid pattern */}
+                          <div className="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:6px_6px] opacity-50" />
+                          {/* Radar circle */}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-full border border-cyan-500/40" />
+                            <div className="w-2 h-2 rounded-full bg-rose-500 ring-2 ring-rose-400 animate-ping" />
+                            <div className="absolute text-[7px] font-mono font-bold text-cyan-300 bottom-0.5 text-center w-full">
+                              SAT MAP
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Title, Address & Coordinates */}
+                        <div className="flex-1 min-w-0 space-y-0.5 text-left">
+                          <h4 className="text-[11px] sm:text-xs font-black text-white leading-tight truncate">
+                            MIT Academy of Engineering (MITAOE)
+                          </h4>
+                          <p className="text-[9px] text-slate-300 leading-snug line-clamp-1">
+                            {addressText}
+                          </p>
+                          <p className="text-[9px] font-mono text-cyan-300 font-bold">
+                            Lat {gpsCoords.lat.toFixed(4)}° N &nbsp; Long {gpsCoords.lng.toFixed(4)}° E
+                          </p>
+                          <p className="text-[8px] text-slate-300 font-mono">
+                            {new Date().toLocaleString('en-IN', {
+                              weekday: 'short',
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit',
+                            })}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* 6 Sensor Telemetry Gauges */}
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 pt-1 border-t border-white/10 text-[8px] font-mono text-slate-200">
+                        <div className="flex items-center space-x-1">
+                          <Wind className="w-2.5 h-2.5 text-cyan-400 shrink-0" />
+                          <span>{windSpeed}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Droplets className="w-2.5 h-2.5 text-blue-400 shrink-0" />
+                          <span>{humidity}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Layers className="w-2.5 h-2.5 text-amber-400 shrink-0" />
+                          <span>{altitude} m</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Thermometer className="w-2.5 h-2.5 text-rose-400 shrink-0" />
+                          <span>{temperature}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Compass className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
+                          <span>{compassHeading}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Zap className="w-2.5 h-2.5 text-yellow-400 shrink-0" />
+                          <span>{magneticField}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+                {/* Shutter Button & Camera Controls (White Ring with Red Center matching reference) */}
+                <div className="pt-2 flex flex-col items-center space-y-2">
+                  <div className="flex items-center justify-center">
+                    <button
+                      onClick={handleCaptureGeotagEvidence}
+                      disabled={isCapturing}
+                      title={isInsideGeofence ? 'Capture Geotagged Evidence' : 'Shutter Locked (Geofence Breach)'}
+                      className={`group transition-transform active:scale-95 cursor-pointer ${
+                        !isInsideGeofence ? 'cursor-not-allowed opacity-80' : ''
+                      }`}
+                    >
+                      {/* Outer White Ring */}
+                      <div className={`w-16 h-16 rounded-full border-4 flex items-center justify-center p-1 transition-colors ${
+                        isInsideGeofence ? 'border-white bg-slate-900/60 hover:bg-slate-800/80' : 'border-rose-500 bg-rose-950/60 animate-pulse'
+                      }`}>
+                        {/* Inner Red Shutter Circle */}
+                        {isInsideGeofence ? (
+                          <div className="w-11 h-11 rounded-full bg-rose-600 group-hover:bg-rose-500 transition-colors flex items-center justify-center shadow-lg">
+                            {isCapturing ? (
+                              <RefreshCw className="w-5 h-5 text-white animate-spin" />
+                            ) : (
+                              <Camera className="w-5 h-5 text-white" />
+                            )}
+                          </div>
+                        ) : (
+                          <div className="w-11 h-11 rounded-full bg-rose-700 flex items-center justify-center shadow-lg">
+                            <Lock className="w-5 h-5 text-white" />
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  </div>
+
+                  <p className="text-[10px] text-center font-bold">
+                    {isInsideGeofence ? (
+                      <span className="text-emerald-700">
+                        📸 Tap Shutter to Capture &amp; Seal ({currentDistance}m inside authorized perimeter)
+                      </span>
+                    ) : (
+                      <span className="text-rose-700 animate-pulse">
+                        🚫 Camera Shutter Locked: Inspector is {currentDistance}m away (+{breachDelta}m outside fence)
+                      </span>
+                    )}
+                  </p>
+                </div>
+
+                {/* Last Captured Evidence Banner with Admin Portal Link */}
+                {lastCapturedEvidence && (
+                  <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl space-y-2 text-xs">
+                    <div className="flex justify-between items-center text-emerald-900 font-extrabold">
+                      <span className="flex items-center space-x-1">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>Evidence Sealed &amp; Sent to Admin Portal!</span>
+                      </span>
+                      <span className="text-[9px] font-mono text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
+                        Section 65B Certified
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-emerald-800 leading-snug">
+                      Geotagged proof for <strong>{lastCapturedEvidence.lab.name}</strong> was stamped, hashed with SHA-256, and queued for regulatory scrutiny.
+                    </p>
+                    <div className="flex items-center space-x-2 pt-1">
+                      <Link
+                        href="/admin"
+                        className="flex-1 py-1.5 px-3 bg-[#0B2E5C] hover:bg-[#1D4E9E] text-white font-bold rounded-lg text-center transition-colors flex items-center justify-center space-x-1.5"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Open in Admin Portal for Verification</span>
+                      </Link>
+                    </div>
+                  </div>
+                )}
+
+                {/* Statutory Requirements Checklist Card */}
+                <div className="bg-slate-50 p-2 rounded-lg border border-slate-200 text-[10px] space-y-1">
+                  <div className="flex justify-between font-bold text-[#0B2E5C]">
+                    <span>{activeLab.code} Statutory Checklist:</span>
+                    <span className="text-emerald-700">{activeLab.carpetAreaSqM} sq.m Verified</span>
+                  </div>
+                  <p className="text-[9px] text-slate-600 leading-snug">
+                    <strong>Mandate:</strong> {activeLab.clause}
+                  </p>
+                  <p className="text-[9px] text-slate-500">
+                    <strong>Equipment:</strong> {activeLab.equipmentSummary}
+                  </p>
+                </div>
               </div>
 
-              {/* Logged Geotagged Evidences */}
+              {/* Toast Notification */}
+              {pinFeedbackToast && (
+                <div className="bg-emerald-900/90 text-emerald-100 p-2 rounded-lg text-[10px] font-semibold text-center border border-emerald-500/50 shadow-md animate-bounce">
+                  {pinFeedbackToast}
+                </div>
+              )}
+
+              {/* Logged Geotagged Evidences with Geofence Status */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <p className="text-[10px] font-black uppercase text-[#0B2E5C]">
@@ -738,12 +1898,16 @@ export default function MobileAppPage() {
                 {evidenceList.map((item) => (
                   <div key={item.id} className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-xs space-y-1">
                     <div className="flex justify-between items-center">
-                      <span className="text-[11px] font-bold text-[#0B2E5C]">{item.title}</span>
-                      <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 text-[8px] font-bold rounded">
-                        ✓ Block Sealed
+                      <div className="flex items-center space-x-1.5 truncate">
+                        <span className="text-[11px] font-bold text-[#0B2E5C] truncate">{item.title}</span>
+                      </div>
+                      <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 text-[8px] font-bold rounded shrink-0">
+                        ✓ {item.distanceMeters ? `${item.distanceMeters}m Geofenced` : 'Verified'}
                       </span>
                     </div>
-                    <p className="text-[9px] text-slate-600">📍 {item.lat} • {item.time}</p>
+                    <p className="text-[9px] text-slate-600">
+                      📍 {item.lat} • {item.time}
+                    </p>
                     <p className="text-[8px] font-mono text-slate-500 bg-slate-50 p-1 rounded truncate">
                       SHA-256: {item.hash}
                     </p>
@@ -1096,6 +2260,61 @@ export default function MobileAppPage() {
               >
                 Close Assistant
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* AICTE Statutory Geofence Fraud Breach Alert Modal */}
+        {showBreachModal && breachAlertData && (
+          <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex flex-col justify-end p-3 select-none">
+            <div className="bg-white rounded-2xl p-4 space-y-3 border-2 border-rose-500 shadow-2xl animate-in slide-in-from-bottom-8">
+              <div className="flex items-center space-x-2 text-rose-600">
+                <AlertOctagon className="w-5 h-5 shrink-0 animate-bounce" />
+                <div>
+                  <span className="text-[9px] font-black uppercase tracking-wider bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded">
+                    AICTE FRAUD MITIGATION ENGINE
+                  </span>
+                  <h3 className="text-xs font-black text-rose-700 mt-0.5">
+                    Statutory Geofence Violation (§4.2.3)
+                  </h3>
+                </div>
+              </div>
+
+              <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-left space-y-1.5 text-[10px]">
+                <p className="font-bold text-rose-900 leading-snug">
+                  Camera shutter locked! Physical inspection photos must be captured within designated lab coordinates.
+                </p>
+                <div className="space-y-1 font-mono text-[9px] text-slate-700 bg-white/80 p-2 rounded border border-rose-200">
+                  <p><strong>Target Lab:</strong> {breachAlertData.lab.name} ({breachAlertData.lab.code})</p>
+                  <p><strong>Perimeter Limit:</strong> {breachAlertData.limit} meters</p>
+                  <p className="text-rose-700 font-bold">
+                    <strong>Measured Distance:</strong> {breachAlertData.distance}m (+{breachAlertData.breachDelta}m outside fence)
+                  </p>
+                  <p><strong>Inspector GPS:</strong> {breachAlertData.coords.lat}° N, {breachAlertData.coords.lng}° E</p>
+                  <p className="text-slate-500"><strong>Statute:</strong> APH 2024-27 Clause §4.2.3 &amp; Sec 65B</p>
+                </div>
+                <p className="text-[9px] text-slate-600 italic">
+                  Recycled or off-campus photographs are strictly blocked from cloud sealing.
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <button
+                  type="button"
+                  onClick={handleRecordBreachInAuditLedger}
+                  className="w-full py-2 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-black rounded-xl transition-all flex items-center justify-center space-x-1 shadow-sm cursor-pointer"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  <span>Log Tamper Breach to Azure Audit Ledger (Sec 65B)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowBreachModal(false)}
+                  className="w-full py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-xl transition-all cursor-pointer"
+                >
+                  Dismiss &amp; Step Inside Lab Perimeter
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -52,6 +52,7 @@ const ROLE_NAV_CONFIG: Record<
     textActiveColor: 'text-[#8B1A1A]',
     items: [
       { id: 'home', label: 'Home', href: '/admin' },
+      { id: 'inspections', label: 'EVC Field Inspections (Geo-Audit)', href: '/admin' },
       { id: 'users', label: 'Directory (Institutions & Officers)', href: '/admin' },
       { id: 'config', label: 'Rule Engine Config', href: '/admin' },
       { id: 'reports', label: 'System Analytics', href: '/admin' },
