@@ -626,16 +626,35 @@ export default function MobileAppPage() {
   const fetchRealtimeAzureData = async () => {
     try {
       setSyncing(true);
-      const [statsRes, alertsRes] = await Promise.all([
-        fetch('/api/stats').then((r) => r.json()),
-        fetch('/api/alerts').then((r) => r.json()),
+      const [statsRes, alertsRes, inspRes] = await Promise.all([
+        fetch('/api/stats').then((r) => r.json()).catch(() => null),
+        fetch('/api/alerts').then((r) => r.json()).catch(() => null),
+        fetch('/api/inspections?limit=20').then((r) => r.json()).catch(() => null),
       ]);
 
-      if (statsRes.success && statsRes.data) {
+      if (statsRes?.success && statsRes?.data) {
         setStats(statsRes.data);
       }
-      if (alertsRes.success && Array.isArray(alertsRes.data)) {
+      if (alertsRes?.success && Array.isArray(alertsRes.data)) {
         setAlerts(alertsRes.data);
+      }
+      if (inspRes?.success && Array.isArray(inspRes.data) && inspRes.data.length > 0) {
+        const liveItems: EvidenceItem[] = inspRes.data.map((item: any) => ({
+          id: item.id,
+          title: item.lab_name,
+          category: item.lab_name,
+          lat: `${Number(item.latitude).toFixed(4)}° N, ${Number(item.longitude).toFixed(4)}° E (±${item.accuracy || 2.1}m)`,
+          time: item.timestamp
+            ? new Date(item.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+            : 'Live Fixed',
+          hash: item.sha256_seal || item.sha256_hash || 'SHA-256 Verified',
+          verified: item.verification_status === 'APPROVED' || item.geofence_status === 'COMPLIANT',
+          geofenceStatus: item.geofence_status,
+          distanceMeters: item.distance_meters,
+          labCode: item.lab_code,
+          radiusMeters: item.statutory_radius_meters || 35,
+        }));
+        setEvidenceList(liveItems);
       }
     } catch (err) {
       console.error('Failed to sync mobile app with Azure DB:', err);

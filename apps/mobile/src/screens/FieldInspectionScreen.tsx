@@ -28,21 +28,27 @@ import { FullScreenCaptureScreen } from './FullScreenCaptureScreen';
 import { CaptureRecord } from '../services/captureQueue';
 
 const getBackendUrl = (): string => {
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return `${process.env.EXPO_PUBLIC_API_URL}/api/inspections`;
+  }
   const debuggerHost = Constants.expoConfig?.hostUri || (Constants as any).manifest2?.extra?.expoClient?.hostUri || '';
   const hostIp = debuggerHost ? debuggerHost.split(':')[0] : '';
   if (hostIp && hostIp !== 'localhost') {
     return `http://${hostIp}:3000/api/inspections`;
   }
-  return 'http://50.0.7.112:3000/api/inspections';
+  return 'https://sih-2k26-2-0.vercel.app/api/inspections';
 };
 
 const getBackendAuditUrl = (): string => {
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return `${process.env.EXPO_PUBLIC_API_URL}/api/audit`;
+  }
   const debuggerHost = Constants.expoConfig?.hostUri || (Constants as any).manifest2?.extra?.expoClient?.hostUri || '';
   const hostIp = debuggerHost ? debuggerHost.split(':')[0] : '';
   if (hostIp && hostIp !== 'localhost') {
     return `http://${hostIp}:3000/api/audit`;
   }
-  return 'http://50.0.7.112:3000/api/audit';
+  return 'https://sih-2k26-2-0.vercel.app/api/audit';
 };
 
 export interface StatutoryLab {

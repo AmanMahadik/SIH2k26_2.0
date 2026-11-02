@@ -33,13 +33,16 @@ export interface CaptureRecord {
 }
 
 const getApiBaseUrl = (): string => {
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
   const debuggerHost =
     Constants.expoConfig?.hostUri || (Constants as any).manifest2?.extra?.expoClient?.hostUri || '';
   const hostIp = debuggerHost ? debuggerHost.split(':')[0] : '';
   if (hostIp && hostIp !== 'localhost') {
     return `http://${hostIp}:3000`;
   }
-  return 'http://50.0.7.112:3000';
+  return 'https://sih-2k26-2-0.vercel.app';
 };
 
 class CaptureQueueService {
