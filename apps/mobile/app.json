@@ -11,12 +11,23 @@
       "resizeMode": "contain",
       "backgroundColor": "#FFFFFF"
     },
+    "updates": {
+      "url": "https://u.expo.dev/194d8ae4-10f6-4d48-a56b-773f3c0db159",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.code4bharat.nirikshai",
       "infoPlist": {
         "NSCameraUsageDescription": "AICTE EVC Inspector requires camera access to capture geotagged photos of laboratories and physical infrastructure.",
-        "NSLocationWhenInUseUsageDescription": "NirikshAI requires real-time GPS coordinates to stamp tamper-proof geotags on physical inspection evidence."
+        "NSLocationWhenInUseUsageDescription": "NirikshAI requires real-time GPS coordinates to stamp tamper-proof geotags on physical inspection evidence.",
+        "NSPhotoLibraryUsageDescription": "NirikshAI requires photo library access to store and review inspected evidence photos.",
+        "NSPhotoLibraryAddUsageDescription": "NirikshAI requires photo library write access to save sealed inspection records."
       }
     },
     "android": {
@@ -30,11 +41,42 @@
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES",
+        "READ_MEDIA_VIDEO"
       ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "194d8ae4-10f6-4d48-a56b-773f3c0db159"
+      }
+    },
+    "owner": "aman1611",
+    "plugins": [
+      "expo-sqlite",
+      "expo-updates",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "AICTE EVC Inspector requires camera access to capture geotagged photos of laboratories and physical infrastructure."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "NirikshAI requires real-time GPS coordinates to stamp tamper-proof geotags on physical inspection evidence."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "AICTE EVC Inspector requires access to photo storage to save certified inspection evidence.",
+          "savePhotosPermission": "NirikshAI requires permission to save watermarked evidentiary photos to device storage."
+        }
+      ]
+    ]
   }
 }
