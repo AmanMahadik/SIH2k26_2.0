@@ -58,7 +58,7 @@ export const LiveGeofenceMap: React.FC<LiveGeofenceMapProps> = ({
     Constants.expoConfig?.android?.config?.googleMaps?.apiKey ||
     (Constants as any).manifest2?.extra?.expoClient?.android?.config?.googleMaps?.apiKey ||
     process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ||
-    '';
+    'AIzaSyCh47sQ1Zk-iCbJIvY3tJ9kkB4008rpUSE';
 
   const hasValidMapsKey = Boolean(
     Platform.OS !== 'web' &&

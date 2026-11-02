@@ -36,6 +36,11 @@
         "backgroundColor": "#FFFFFF"
       },
       "package": "com.code4bharat.nirikshai",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCh47sQ1Zk-iCbJIvY3tJ9kkB4008rpUSE"
+        }
+      },
       "permissions": [
         "CAMERA",
         "ACCESS_FINE_LOCATION",
