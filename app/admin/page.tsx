@@ -904,22 +904,30 @@ export default function AdminDashboardPage() {
                       {/* Photo Container with Embedded GPS Map Camera Overlay */}
                       <div className="relative h-64 bg-slate-950 overflow-hidden flex flex-col justify-between select-none">
                         {/* Background Viewfinder Scene */}
-                        <div
-                          className="absolute inset-0 bg-cover bg-center opacity-85"
-                          style={{
-                            backgroundImage:
-                              item.photo_type === 'wheelchair_ramp'
-                                ? 'url(/assets/sample_ramp.jpg)'
-                                : item.photo_type === 'robotics_lab'
-                                ? 'url(/assets/sample_robotics.jpg)'
-                                : 'radial-gradient(ellipse at center, #1e293b 0%, #020617 100%)',
-                          }}
-                        >
-                          {/* Fallback procedural lab overlay */}
-                          <div className="absolute inset-0 flex items-center justify-center opacity-20">
-                            <span className="text-8xl">🔬</span>
+                        {item.photo_url ? (
+                          <img
+                            src={item.photo_url}
+                            alt={item.lab_name}
+                            className="absolute inset-0 w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div
+                            className="absolute inset-0 bg-cover bg-center opacity-85"
+                            style={{
+                              backgroundImage:
+                                item.photo_type === 'wheelchair_ramp'
+                                  ? 'url(/assets/sample_ramp.jpg)'
+                                  : item.photo_type === 'robotics_lab'
+                                  ? 'url(/assets/sample_robotics.jpg)'
+                                  : 'radial-gradient(ellipse at center, #1e293b 0%, #020617 100%)',
+                            }}
+                          >
+                            {/* Fallback procedural lab overlay */}
+                            <div className="absolute inset-0 flex items-center justify-center opacity-20">
+                              <span className="text-8xl">🔬</span>
+                            </div>
                           </div>
-                        </div>
+                        )}
 
                         {/* Top Viewfinder Toolbar */}
                         <div className="relative z-10 px-3 py-2 bg-gradient-to-b from-black/80 to-transparent flex items-center justify-between text-white text-[10px]">

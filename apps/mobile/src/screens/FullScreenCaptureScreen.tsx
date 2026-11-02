@@ -216,8 +216,36 @@ export const FullScreenCaptureScreen: React.FC<FullScreenCaptureScreenProps> = (
         retryCount: 0,
       };
 
-      // 5. Persist to local offline-first SQLite queue
+      // 5. Persist to local offline-first SQLite queue & immediately sync to Central Azure DB
       await captureQueue.enqueueCapture(record);
+
+      try {
+        const photoDataUrl = base64Bytes ? `data:image/jpeg;base64,${base64Bytes}` : undefined;
+        await fetch('https://sih-2k26-2-0.vercel.app/api/inspections', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: record.id,
+            campus_name: record.campusName,
+            aicte_id: '1-23111191',
+            lab_name: record.labName,
+            lab_code: record.labCode,
+            statutory_clause: record.clause,
+            address: record.address,
+            latitude: record.lat,
+            longitude: record.lng,
+            accuracy: record.accuracy,
+            distance_meters: record.distanceM,
+            geofence_status: record.geofenceStatus,
+            inspector_name: record.officerName,
+            sha256_seal: record.imageHash,
+            captured_at: record.capturedAt,
+            photo_url: photoDataUrl,
+          }),
+        });
+      } catch (uploadErr) {
+        console.warn('Live transmission note:', uploadErr);
+      }
 
       setSessionCaptures((prev) => [record, ...prev]);
       setCapturedRawUri(null);

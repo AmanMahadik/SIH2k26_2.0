@@ -31,22 +31,12 @@ const getBackendUrl = (): string => {
   if (process.env.EXPO_PUBLIC_API_URL) {
     return `${process.env.EXPO_PUBLIC_API_URL}/api/inspections`;
   }
-  const debuggerHost = Constants.expoConfig?.hostUri || (Constants as any).manifest2?.extra?.expoClient?.hostUri || '';
-  const hostIp = debuggerHost ? debuggerHost.split(':')[0] : '';
-  if (hostIp && hostIp !== 'localhost') {
-    return `http://${hostIp}:3000/api/inspections`;
-  }
   return 'https://sih-2k26-2-0.vercel.app/api/inspections';
 };
 
 const getBackendAuditUrl = (): string => {
   if (process.env.EXPO_PUBLIC_API_URL) {
     return `${process.env.EXPO_PUBLIC_API_URL}/api/audit`;
-  }
-  const debuggerHost = Constants.expoConfig?.hostUri || (Constants as any).manifest2?.extra?.expoClient?.hostUri || '';
-  const hostIp = debuggerHost ? debuggerHost.split(':')[0] : '';
-  if (hostIp && hostIp !== 'localhost') {
-    return `http://${hostIp}:3000/api/audit`;
   }
   return 'https://sih-2k26-2-0.vercel.app/api/audit';
 };
@@ -166,6 +156,7 @@ export const FieldInspectionScreen: React.FC = () => {
   const [cameraFacing, setCameraFacing] = useState<'back' | 'front'>('back');
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const [cameraActive, setCameraActive] = useState<boolean>(true);
+  const cameraRef = useRef<any>(null);
   const [isFullScreenCaptureOpen, setIsFullScreenCaptureOpen] = useState<boolean>(false);
 
   const [isPermissionDismissed, setIsPermissionDismissed] = useState<boolean>(false);
@@ -439,6 +430,22 @@ export const FieldInspectionScreen: React.FC = () => {
     setIsCapturing(true);
 
     try {
+      // 1. Snapshot real camera photograph
+      let capturedPhotoUrl: string | undefined = undefined;
+      try {
+        if (cameraRef.current && cameraPermission?.granted) {
+          const snap = await cameraRef.current.takePictureAsync({
+            quality: 0.6,
+            base64: true,
+          });
+          if (snap?.base64) {
+            capturedPhotoUrl = `data:image/jpeg;base64,${snap.base64}`;
+          }
+        }
+      } catch (camErr) {
+        console.warn('Camera snapshot note:', camErr);
+      }
+
       // Hardware-attested SHA-256 seal via expo-crypto
       const rawPayload = `MITAOE-EVC|${activeLab.code}|${activeLab.name}|${currentLat},${currentLng}|${currentDistance}m|${Date.now()}`;
       const sha256Hash = await Crypto.digestStringAsync(
@@ -466,9 +473,10 @@ export const FieldInspectionScreen: React.FC = () => {
 
       setPhotos([newEvidence, ...photos]);
 
-      // Attempt sync to Central Azure DB / Scrutiny Backend
+      // Direct synchronous transmission to Central Azure DB / Scrutiny Backend
+      const targetApiUrl = getBackendUrl();
       try {
-        fetch(getBackendUrl(), {
+        await fetch(targetApiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -489,13 +497,16 @@ export const FieldInspectionScreen: React.FC = () => {
             temperature: '25°C',
             distance_meters: currentDistance,
             statutory_radius_meters: activeLab.radiusMeters,
-            geofence_status: 'COMPLIANT',
+            geofence_status: isInsideGeofence ? 'COMPLIANT' : 'BREACH',
             inspector_name: CURRENT_EVC_OFFICER.name,
             sha256_seal: sha256Hash,
+            photo_url: capturedPhotoUrl,
             photo_type: activeLab.id === 'lab-wheelchair-ramp' ? 'wheelchair_ramp' : 'computer_center',
           }),
-        }).catch(() => {});
-      } catch (e) {}
+        });
+      } catch (e) {
+        console.warn('Backend sync transmission note:', e);
+      }
 
       Alert.alert(
         '📸 Geofence Verified & Sealed',
@@ -788,6 +799,7 @@ export const FieldInspectionScreen: React.FC = () => {
             {/* Live Camera View in Expo Go */}
             {cameraPermission?.granted && cameraActive ? (
               <CameraView
+                ref={cameraRef}
                 facing={cameraFacing}
                 style={StyleSheet.absoluteFillObject}
               />

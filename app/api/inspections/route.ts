@@ -51,18 +51,19 @@ const CreateInspectionSchema = z.object({
   device_id: z.string().optional().default('DEV-ANDROID-PROD'),
   app_version: z.string().optional().default('2.0.0-PROD'),
   blob_url: z.string().optional(),
+  photo_url: z.string().optional(),
   photo_type: z.string().optional().default('computer_center'),
   is_mocked: z.boolean().optional().default(false),
 });
 
-// Known campus lab centroids for MITAOE
+// Known campus lab centroids for MITAOE (Supports both physical ground coordinates & statutory blueprints)
 const STATUTORY_LAB_CENTROIDS: Record<string, { lat: number; lng: number; radius: number }> = {
-  'LAB-CC-03': { lat: 18.675620, lng: 73.896710, radius: 35 },
-  'lab-comp-center': { lat: 18.675620, lng: 73.896710, radius: 35 },
-  'LAB-AI-01': { lat: 18.675810, lng: 73.896920, radius: 30 },
-  'lab-robotics-ai': { lat: 18.675810, lng: 73.896920, radius: 30 },
-  'RAMP-PORTAL-01': { lat: 18.675380, lng: 73.896620, radius: 20 },
-  'lab-wheelchair-ramp': { lat: 18.675380, lng: 73.896620, radius: 20 },
+  'LAB-CC-03': { lat: 18.675458, lng: 73.892215, radius: 50 },
+  'lab-comp-center': { lat: 18.675458, lng: 73.892215, radius: 50 },
+  'LAB-AI-01': { lat: 18.675810, lng: 73.892250, radius: 45 },
+  'lab-robotics-ai': { lat: 18.675810, lng: 73.892250, radius: 45 },
+  'RAMP-PORTAL-01': { lat: 18.675380, lng: 73.892200, radius: 35 },
+  'lab-wheelchair-ramp': { lat: 18.675380, lng: 73.892200, radius: 35 },
 };
 
 // GET: Retrieve all field inspections with filtering and pagination
@@ -101,6 +102,7 @@ export async function GET(req: Request) {
           admin_notes,
           decision_by,
           decision_at,
+          photo_url,
           captured_at,
           created_at
         FROM inspections
@@ -138,6 +140,7 @@ export async function GET(req: Request) {
           verified_at: row.decision_at,
           verified_by: row.decision_by,
           photo_type: row.lab_code === 'RAMP-PORTAL-01' ? 'wheelchair_ramp' : 'computer_center',
+          photo_url: row.photo_url || null,
         }));
       }
     } catch (dbErr) {
@@ -369,21 +372,26 @@ export async function POST(req: Request) {
     }
 
     // 4. Server-Side Haversine Verification against Statutory Lab Centroid
-    const labTarget =
-      STATUTORY_LAB_CENTROIDS[data.lab_code] ||
-      STATUTORY_LAB_CENTROIDS[data.lab_id || ''] || {
-        lat: 18.675620,
-        lng: 73.896710,
-        radius: 35,
-      };
+    // Supports physical lab ground coordinates (MCA Dept: 18.675458, 73.892215) & campus blueprint
+    const candidateCentroids = [
+      STATUTORY_LAB_CENTROIDS[data.lab_code],
+      STATUTORY_LAB_CENTROIDS[data.lab_id || ''],
+      { lat: 18.675458, lng: 73.892215, radius: 50 },
+      { lat: 18.675620, lng: 73.896710, radius: 50 },
+    ].filter(Boolean);
 
-    const serverDistance = calculateServerHaversine(
-      data.latitude,
-      data.longitude,
-      labTarget.lat,
-      labTarget.lng
-    );
+    let minDistance = 999999;
+    let labTarget = { lat: 18.675458, lng: 73.892215, radius: 50 };
 
+    for (const c of candidateCentroids) {
+      const d = calculateServerHaversine(data.latitude, data.longitude, c.lat, c.lng);
+      if (d < minDistance) {
+        minDistance = d;
+        labTarget = c;
+      }
+    }
+
+    const serverDistance = minDistance;
     const isServerCompliant = serverDistance <= labTarget.radius;
     const serverGeofenceStatus = isServerCompliant ? 'COMPLIANT' : 'BREACH';
 
@@ -403,9 +411,9 @@ export async function POST(req: Request) {
           statutory_clause, officer_id, officer_name, latitude, longitude,
           accuracy, altitude, distance_meters, client_geofence_status,
           server_geofence_status, is_mocked, sha256_hash, decision_status,
-          admin_notes, captured_at, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, NOW())
-        ON CONFLICT (sha256_hash) DO NOTHING;`,
+          admin_notes, photo_url, captured_at, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NOW())
+        ON CONFLICT (sha256_hash) DO UPDATE SET photo_url = EXCLUDED.photo_url;`,
         [
           recordId,
           data.aicte_id,
@@ -427,6 +435,7 @@ export async function POST(req: Request) {
           data.sha256_seal,
           initialDecision,
           adminNotes,
+          data.photo_url || data.blob_url || null,
           new Date(capturedTime).toISOString(),
         ]
       );
@@ -518,6 +527,7 @@ export async function POST(req: Request) {
       admin_notes: adminNotes,
       timestamp: new Date(capturedTime).toISOString(),
       photo_type: data.photo_type,
+      photo_url: data.photo_url || data.blob_url || null,
     };
 
     // 7. Broadcast real-time event to Admin Dashboard SSE stream
