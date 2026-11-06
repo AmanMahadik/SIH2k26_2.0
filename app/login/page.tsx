@@ -18,6 +18,7 @@ import {
   EyeOff,
   Info,
   AlertTriangle,
+  Sparkles,
 } from 'lucide-react';
 import { DEMO_USERS, GovRole, setClientAuthCookie } from '@/lib/mock-auth';
 
@@ -44,9 +45,10 @@ export default function LoginPage() {
     if (demo) {
       setUserId(demo.email);
       setPassword('demo123');
+      if (activeCaptchaCode) {
+        setCaptchaInput(activeCaptchaCode);
+      }
     }
-    triggerCaptchaRefresh();
-    setCaptchaInput('');
   };
 
   const handleUseDemoAccount = () => {
@@ -340,6 +342,16 @@ export default function LoginPage() {
                       <span>{errorMsg}</span>
                     </div>
                   )}
+
+                  {/* 1-Click Demo Fill Button */}
+                  <button
+                    type="button"
+                    onClick={handleUseDemoAccount}
+                    className="w-full py-2 bg-[#E8F0FB] hover:bg-[#D0E2F9] text-[#0B2E5C] border border-[#0B2E5C]/30 text-xs font-bold rounded-[6px] transition-colors flex items-center justify-center space-x-1.5 shadow-2xs"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-[#1D4E9E]" />
+                    <span>Auto-Fill Demo Credentials & Captcha</span>
+                  </button>
 
                   {/* Sign In Button */}
                   <button

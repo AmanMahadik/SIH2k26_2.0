@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Send,
   HelpCircle,
+  UploadCloud,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -35,6 +36,7 @@ export default function OfficerCaseScrutinyPage() {
   const [activeHighlightField, setActiveHighlightField] = useState<string | null>(null);
   const [decisionNotes, setDecisionNotes] = useState<string>('');
   const [isActionLoading, setIsActionLoading] = useState<boolean>(false);
+  const [isUploadingDoc, setIsUploadingDoc] = useState<boolean>(false);
 
   useEffect(() => {
     const loaded = getStoredApplications();
@@ -138,6 +140,69 @@ export default function OfficerCaseScrutinyPage() {
 
       setIsActionLoading(false);
     }, 1000);
+  };
+
+  const handleOfficerPdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingDoc(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('application_id', app.id);
+      formData.append('actor', 'Dr. Priya Sharma (Scrutiny Officer)');
+
+      const res = await fetch('/api/documents/extract', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const json = await res.json();
+      setIsUploadingDoc(false);
+
+      if (json.success && json.data) {
+        const ext = json.data;
+        const newDoc: DocumentItem = {
+          id: `doc-live-${Date.now()}`,
+          application_id: app.id,
+          doc_type: ext.docType,
+          filename: ext.filename,
+          storage_path: `uploads/${ext.filename}`,
+          sha256: ext.sha256,
+          page_count: ext.pageCount,
+          analysis_status: 'completed',
+          uploaded_at: new Date().toISOString(),
+          extracted_fields: ext.extractedFields,
+          tamper_indicators: ext.tamperIndicators,
+          verification: {
+            status: ext.tamperIndicators.length > 0 ? 'manual_review_required' : 'verified',
+            source: 'mock_issuer',
+            timestamp: new Date().toISOString(),
+            request_ref: `VER-LIVE-${Date.now().toString().slice(-4)}`,
+            comparison: ext.extractedFields.map((f: any) => ({
+              field_key: f.field_key,
+              submitted_value: f.value,
+              source_value: f.value,
+              match: true,
+            })),
+          },
+        };
+
+        const updatedDocs = [...(app.documents || []), newDoc];
+        const updatedApp = { ...app, documents: updatedDocs };
+        const updatedApps = apps.map(a => (a.id === app.id ? updatedApp : a));
+        saveStoredApplications(updatedApps);
+        setApps(updatedApps);
+        setSelectedDocId(newDoc.id);
+        alert(`Document "${file.name}" extracted successfully! Found ${ext.extractedFields.length} regulatory fields and ${ext.tamperIndicators.length} tamper signals.`);
+      } else {
+        alert(json.error || 'Failed to extract PDF');
+      }
+    } catch (err: any) {
+      setIsUploadingDoc(false);
+      alert('Upload failed: ' + err.message);
+    }
   };
 
   const handleFinalDecision = (decisionType: string) => {
@@ -261,7 +326,7 @@ export default function OfficerCaseScrutinyPage() {
           </div>
 
           {/* Document Switcher Tabs */}
-          <div className="flex space-x-2 overflow-x-auto pb-1">
+          <div className="flex items-center space-x-2 overflow-x-auto pb-1">
             {app.documents?.map((d) => (
               <button
                 key={d.id}
@@ -279,6 +344,12 @@ export default function OfficerCaseScrutinyPage() {
                 {d.doc_type.replace(/_/g, ' ').toUpperCase()}
               </button>
             ))}
+
+            <label className="cursor-pointer text-xs font-semibold px-3 py-1.5 rounded-lg border border-dashed border-blue-600 bg-blue-50 text-blue-900 hover:bg-blue-100 flex items-center space-x-1 shrink-0 transition-colors">
+              <UploadCloud className="w-3.5 h-3.5" />
+              <span>{isUploadingDoc ? 'Extracting...' : '+ Live PDF OCR'}</span>
+              <input type="file" accept=".pdf" onChange={handleOfficerPdfUpload} className="hidden" disabled={isUploadingDoc} />
+            </label>
           </div>
 
           {/* Visual Document Canvas Simulation */}
