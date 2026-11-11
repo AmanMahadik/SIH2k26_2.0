@@ -13,7 +13,7 @@
     "test": "node --test tests/production-hardening.test.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.49.1",
+    "@supabase/supabase-js": "^2.119.0",
     "@types/pg": "^8.23.1",
     "clsx": "^2.1.1",
     "docx": "^9.13.0",
